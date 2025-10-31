@@ -1,0 +1,16 @@
+{% extends "layout.html" %}{% block content %}
+<section class="sheet" style="max-width:760px">
+  <h1 class="headline">Contact</h1>
+  <p class="dek">We’re running a quiet pilot and would love to talk. Send a note and we’ll reply quickly.</p>
+  <form method="post" action="/contact" style="display:grid; gap:10px; max-width:560px">
+    <input type="text" name="website" value="" style="display:none" tabindex="-1" autocomplete="off">
+    <label>Email</label>
+    <input type="email" name="email" required placeholder="you@example.com">
+    <label>Name (optional)</label>
+    <input type="text" name="name" placeholder="Your name">
+    <label>Your message</label>
+    <textarea name="message" rows="4" required minlength="12" placeholder="A few sentences about your publication"></textarea>
+    <button class="pay-btn" type="submit">Send</button>
+  </form>
+</section>
+{% endblock %}

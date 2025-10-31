@@ -1,0 +1,71 @@
+{% extends "layout.html" %}{% block content %}
+<section class="rack pub-{{ publisher.layout_style or 'default' }}">
+  <div class="sheet" style="max-width:1180px; background:rgba(14,18,27,.7); margin:0 auto 16px; display:flex; justify-content:space-between; align-items:center; border:1px solid {{ publisher.accent_color or 'rgba(255,255,255,.06)' }}">
+    <div style="display:flex; align-items:center; gap:10px">
+      <img src="{{ publisher.logo_url or (theme and theme.default_kiosk_hero_url) }}" alt="{{ publisher.name }}" width="40" height="40" style="border-radius:8px; object-fit:cover">
+      <div>
+        <h2 class="rack-title" style="margin:0">{{ publisher.name }}</h2>
+        {% if publisher.strapline %}<div class="small-note">{{ publisher.strapline }}</div>{% endif %}
+      </div>
+      {% if publisher.category %}<span class="chip">{{ publisher.category }}</span>{% endif %}
+      {% if publisher.layout_style %}<span class="chip" style="background: rgba(255,255,255,.12)">{{ publisher.layout_style }}</span>{% endif %}
+    </div>
+    <div>
+      <div class="chip">Default: ${{ (publisher.default_price_cents/100) | round(2) }}</div>
+      <div style="margin-top:8px; text-align:right">
+        <form method="get" style="display:flex; gap:8px; align-items:center">
+          <input type="hidden" name="page" value="{{ page }}">
+          <label class="small-note">Sort</label>
+          <select name="sort">
+            <option value="new" {% if sort=='new' %}selected{% endif %}>Newest</option>
+            <option value="price_asc" {% if sort=='price_asc' %}selected{% endif %}>Price: Low to High</option>
+            <option value="price_desc" {% if sort=='price_desc' %}selected{% endif %}>Price: High to Low</option>
+          </select>
+          <button class="pay-btn" type="submit">Apply</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% if articles %}
+  <div style="display:grid; grid-template-columns: {% if publisher.layout_style in ['literary','poetry'] %}1fr 280px{% else %}1fr 320px{% endif %}; gap:16px; padding:0 18px 18px">
+    <div class="rack-grid" style="grid-template-columns: {% if publisher.layout_style in ['newspaper','opinion'] %}1fr 1fr{% elif publisher.layout_style in ['literary','poetry'] %}1fr{% else %}repeat(3, 1fr){% endif %};">
+    {% for a in articles %}
+      <a class="card{% if publisher.layout_style in ['literary','poetry'] %} tall{% endif %}" href="/p/{{ publisher.slug }}/{{ a.slug }}">
+      <picture>
+        <source srcset="{{ a.cover_url | replace('/800/400', '/800/400.webp') }}" type="image/webp">
+        <img class="card-cover{% if publisher.layout_style in ['newspaper'] %} grayscale{% endif %}" src="{{ a.cover_url }}" alt="{{ a.title }}" loading="lazy" width="800" height="400">
+      </picture>
+      <div class="card-body">
+        <div style="display:flex; justify-content:space-between; align-items:center">
+          <h3 class="card-title{% if publisher.layout_style in ['literary','poetry'] %} serif{% endif %}" style="margin-right:8px">{{ a.title }}</h3>
+          <span class="chip">${{ ((a.price_cents or publisher.default_price_cents)/100) | round(2) }}</span>
+        </div>
+        <p class="card-dek{% if publisher.layout_style in ['literary','poetry'] %} serif{% endif %}">{{ a.dek }}</p>
+        <div class="card-meta">{{ a.author }}</div>
+      </div>
+      </a>
+    {% endfor %}
+    </div>
+    <aside>
+      <div class="card" style="padding:14px">
+        <h3 class="card-title">About</h3>
+        <p class="card-dek">{{ publisher.strapline or 'Independent voices and careful reporting.' }}</p>
+        {% if publisher.domain %}<div class="small-note">{{ publisher.domain }}</div>{% endif %}
+        <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap">
+          <a class="chip" href="/p/{{ publisher.slug }}.rss">RSS</a>
+          <a class="chip" href="/contact">Contact</a>
+          <a class="chip" href="/bookmarklet">Bookmarklet</a>
+        </div>
+      </div>
+    </aside>
+  </div>
+  <div class="sheet" style="margin:16px auto 0; display:flex; justify-content:center; gap:12px; max-width:420px; background:rgba(14,18,27,.7); border:1px solid rgba(255,255,255,.06)">
+    {% if page>1 %}<a href="?page={{ page-1 }}" class="pay-btn" style="text-decoration:none;">Prev</a>{% endif %}
+    <span style="align-self:center; color:#9AA2B1;">Page {{ page }} of {{ total_pages }}</span>
+    {% if page<total_pages %}<a href="?page={{ page+1 }}" class="pay-btn" style="text-decoration:none;">Next</a>{% endif %}
+  </div>
+  {% else %}
+  <div class="sheet"><p>No articles yet.</p></div>
+  {% endif %}
+</section>
+{% endblock %}

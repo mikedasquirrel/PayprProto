@@ -1,0 +1,11 @@
+{% extends "layout.html" %}{% block content %}
+<section class="sheet" style="max-width:520px">
+  <h2>Magic link</h2>
+  <p class="dek">Enter your email to receive a one-time sign-in link. In this demo, we’ll show the link after you submit.</p>
+  <form method="post">
+    <label>Email</label>
+    <input type="email" name="email" required placeholder="you@example.com">
+    <button type="submit" class="pay-btn">Send link</button>
+  </form>
+</section>
+{% endblock %}

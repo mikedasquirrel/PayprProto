@@ -1,0 +1,88 @@
+::root {
+  --ink:#0B0D11; --ash:#121621; --smoke:#8EA3B0; --paper:#F5F7FB;
+  --accent:#FA3D7F; --accent2:#00E5FF; --accent3:#2AF7A1;
+  --grad: linear-gradient(135deg,#FA3D7F 0%,#00E5FF 35%,#2AF7A1 65%,#FFFFFF 100%);
+  --radius:14px; --pad:16px;
+}
+* { box-sizing:border-box }
+body.ink { background: var(--ink); color: #E9EDF5; font: var(--base-font, 16px)/1.5 var(--font-body, Inter, system-ui, -apple-system, Segoe UI); margin:0 }
+.topbar { position:sticky; top:0; display:flex; justify-content:space-between; align-items:center;
+  padding:14px 20px; background: #0F141D; border-bottom:1px solid rgba(255,255,255,.08); }
+.brand { color: var(--accent); font-weight:800; letter-spacing:.5px; text-decoration:none }
+nav a { color:#CBD2E0; margin-left:18px; text-decoration:none }
+.streetscape { display:grid; grid-template-columns: repeat(3, 1fr); gap:24px; padding:32px; }
+.kiosk { background: rgba(18,22,33,.66); border:1px solid rgba(255,255,255,.06); border-radius: var(--radius); padding:0; overflow:hidden; position:relative; box-shadow: 0 20px 50px rgba(0,0,0,.45); text-decoration:none; color:inherit; backdrop-filter: blur(8px) }
+.kiosk-awning { height:8px; background: var(--accent); }
+.kiosk-hero { width:100%; height:160px; object-fit:cover; display:block; }
+.kiosk-sign { position:absolute; bottom:12px; left:12px; background: rgba(10,12,18,.8); padding:6px 10px; border-radius:10px; font-weight:700; border:1px solid rgba(255,255,255,.08) }
+.sheet { max-width:840px; margin:32px auto; background: #0F141D; border:1px solid rgba(255,255,255,.08); border-radius: var(--radius); padding:32px; }
+.headline { font-size:38px; line-height:1.1; letter-spacing:-.2px; }
+.headline, h1, h2, h3 { font-family: var(--font-headline, Inter, system-ui, -apple-system, Segoe UI); }
+.dek { color:#C1C7D6; margin-top:8px; }
+.meta { color:#9AA2B1; margin:12px 0 20px }
+.pay-btn { padding:12px 18px; border:0; border-radius:12px; color:#0f1115; font-weight:700; cursor:pointer; background: var(--accent); }
+.pay-btn:hover { transform: translateY(-1px) scale(1.01) }
+.small-note { color:#8E93A4; margin-top:8px; font-size:12px }
+.hidden { display:none }
+.rack-title { margin:24px 32px; }
+.rack-grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:20px; padding:0 32px 32px; }
+.card { background: #111722; border:1px solid rgba(255,255,255,.08); border-radius:14px; overflow:hidden; text-decoration:none; color:inherit; }
+.card-cover { width:100%; height:160px; object-fit:cover; display:block }
+.card-cover.grayscale { filter: grayscale(100%) contrast(1.1); }
+.card-body { padding:14px }
+.card-title { margin:0 0 6px; font-size:18px }
+.card-title.serif { font-family: "Georgia", "Times New Roman", serif; letter-spacing:0; }
+.card-dek { margin:0; color:#C1C7D6; font-size:14px; height:44px; overflow:hidden }
+.card-dek.serif { font-family: "Georgia", "Times New Roman", serif; font-size:15px; line-height:1.6; height:auto; }
+.card.tall .card-cover { height:220px }
+.pub-literary .rack-grid, .pub-poetry .rack-grid { gap:24px }
+.pub-newspaper .rack-grid .card { border:1px solid rgba(255,255,255,.12) }
+.pub-magazine .card-title { letter-spacing:.2px }
+.pub-business .card-title { font-weight:700 }
+.pub-tech .card-title { font-family: var(--font-headline, Inter, system-ui, -apple-system, Segoe UI) }
+.
+/* Style-specific typography tuning */
+.pub-literary .headline, .pub-literary .card-title { font-family: "Georgia", "Times New Roman", serif; letter-spacing:0 }
+.pub-poetry .headline, .pub-poetry .card-title { font-family: "Georgia", "Times New Roman", serif; line-height:1.25 }
+.pub-newspaper .card-dek { font-size:13px; color:#B8C0CF }
+.pub-magazine .card-dek { font-size:15px }
+.pub-tech .card-dek { font-family: var(--font-body, Inter, system-ui, -apple-system, Segoe UI) }
+
+/* Refund countdown states */
+#refund-countdown.warning { color:#FFC43A }
+#refund-countdown.danger { color:#FA3D7F }
+@keyframes pulse { 0%{ transform:scale(1) } 50%{ transform:scale(1.06) } 100%{ transform:scale(1) } }
+#refund-countdown.danger { animation: pulse 1.2s ease infinite }
+
+/* Split chips */
+.chip.role-author { background: rgba(42,247,161,.18); color:#D7FFE8 }
+.chip.role-editor { background: rgba(0,229,255,.18); color:#D9F8FF }
+.chip.role-publisher { background: rgba(160,91,255,.18); color:#EEE1FF }
+.card-meta { margin-top:8px; color:#9AA2B1; font-size:12px }
+.tx-table { width:100%; border-collapse: collapse }
+.tx-table th, .tx-table td { padding:10px 12px; border-bottom:1px solid #1f2430 }
+.topup-form { display:flex; align-items:center; gap:12px; margin-top:10px }
+.focus-ring:focus, a:focus, button:focus, input:focus, select:focus { outline: 2px solid var(--accent2); outline-offset: 2px }
+.skeleton { background: linear-gradient(90deg, #121722 25%, #0f141d 37%, #121722 63%); background-size: 400% 100%; animation: shimmer 1.4s ease infinite; border-radius: 8px; }
+@keyframes shimmer { 0% { background-position: 100% 0 } 100% { background-position: 0 0 } }
+.chip { display:inline-block; padding:4px 8px; border-radius:999px; background: rgba(255,255,255,.08); color:#E9EDF5; font-size:12px; }
+.card:hover { transform: translateY(-2px); transition: transform .18s ease; }
+.page-hint { position:fixed; top:64px; right:24px; background: rgba(26,29,36,.9); color:#E9EDF5; padding:8px 12px; border-radius:10px; box-shadow: 0 6px 20px rgba(0,0,0,.35); display:none; }
+.page-hint.show { display:block; }
+
+/* Magazine rack styles */
+.rack { background: #0E131D; border:1px solid rgba(255,255,255,.08); border-radius: var(--radius); padding: 18px 18px 8px }
+.shelf-label { color:#CBD2E0; font-weight:700; margin:8px 6px 8px; }
+.shelf { display:grid; grid-template-columns: repeat(6, 1fr); gap:14px; padding: 8px 6px 24px; border-top: 2px solid rgba(255,255,255,.06); }
+.shelf .mag .mag-cover { height: 200px; }
+.mag { background: rgba(15,20,29,.7); border:1px solid rgba(255,255,255,.06); border-radius: 8px; text-decoration:none; color:inherit; display:flex; flex-direction:column; align-items:center; padding:10px; box-shadow: 0 20px 48px rgba(0,0,0,.45); backdrop-filter: blur(6px) }
+.mag-cover { width:100%; height:160px; object-fit:cover; border-radius:6px; display:block }
+.mag-spine { width:100%; height:6px; background: rgba(255,255,255,.08); border-radius: 999px; margin-bottom:8px }
+.mag-title { margin-top:8px; font-size:12px; color:#C1C7D6; text-align:center; height:28px; overflow:hidden }
+
+@media (max-width: 1100px) {
+  .shelf { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 720px) {
+  .shelf { grid-template-columns: repeat(2, 1fr); }
+}

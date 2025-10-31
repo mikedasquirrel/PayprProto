@@ -1,0 +1,16 @@
+{% extends "layout.html" %}{% block content %}
+<section class="sheet" style="max-width:520px">
+  <h1 class="headline">Admin Sign in</h1>
+  <form method="POST" action="{{ url_for('admin.admin_login') }}" class="tx-table">
+    <table class="tx-table">
+      <tbody>
+        <tr><th>Username</th><td><input type="text" name="username" required></td></tr>
+        <tr><th>Password</th><td><input type="password" name="password" required></td></tr>
+      </tbody>
+    </table>
+    <div style="margin-top:12px"><button class="pay-btn" type="submit">Sign in</button></div>
+  </form>
+</section>
+{% endblock %}
+
+

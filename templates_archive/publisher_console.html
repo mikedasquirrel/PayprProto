@@ -1,0 +1,49 @@
+{% extends "layout.html" %}{% block content %}
+<section class="sheet">
+  <h2>Publisher Console</h2>
+  <h3>All-time</h3>
+  <table class="tx-table">
+    <thead>
+      <tr><th>Publisher</th><th>Reads</th><th>Gross</th><th>Fees</th><th>Net</th><th>14d</th></tr>
+    </thead>
+    <tbody>
+    {% for pid, name, reads, gross, fees, net in summaries %}
+      <tr>
+        <td>{{ name }}</td>
+        <td>{{ reads or 0 }}</td>
+        <td>${{ ((gross or 0)/100) | round(2) }}</td>
+        <td>${{ ((fees or 0)/100) | round(2) }}</td>
+        <td>${{ ((net or 0)/100) | round(2) }}</td>
+        <td>
+          {% set pts = spark_points.get(pid) %}
+          {% if pts %}
+          <svg width="80" height="18" viewBox="0 0 80 18" preserveAspectRatio="none" aria-label="reads last 14 days" role="img">
+            <polyline fill="none" stroke="#2AF7A1" stroke-width="2" points="{{ pts }}"/>
+          </svg>
+          {% else %}
+          <span class="small-note">—</span>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <h3 style="margin-top:20px">Last 7 days</h3>
+  <table class="tx-table">
+    <thead>
+      <tr><th>Publisher</th><th>Reads</th><th>Gross</th><th>Fees</th><th>Net</th></tr>
+    </thead>
+    <tbody>
+    {% for name, reads, gross, fees, net in summaries_7d %}
+      <tr>
+        <td>{{ name }}</td>
+        <td>{{ reads or 0 }}</td>
+        <td>${{ ((gross or 0)/100) | round(2) }}</td>
+        <td>${{ ((fees or 0)/100) | round(2) }}</td>
+        <td>${{ ((net or 0)/100) | round(2) }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "layout.html" %}{% block content %}
+<section class="sheet" style="max-width:1000px">
+  <h1 class="headline">Partner with Paypr</h1>
+  <p class="dek">We’ll build your site if you want. You set prices. Author/publisher/editor splits happen in the Paypr Pro wallet—kept off the reader’s path.</p>
+
+  <div class="walk-grid">
+    <div class="card" style="padding:20px">
+      <h3 class="card-title">Small, fair prices</h3>
+      <p class="card-dek">Set your article price—10¢, 15¢, 25¢, 39¢, 50¢, 75¢, 99¢. One tap, instantly unlocked.</p>
+    </div>
+
+    <div class="card" style="padding:20px">
+      <h3 class="card-title">We can build your site</h3>
+      <p class="card-dek">If you prefer, we’ll stand up a clean site for you. Your domain, your voice, our tiny unlock button.</p>
+    </div>
+
+    <div class="card" style="padding:20px">
+      <h3 class="card-title">Pricing you control</h3>
+      <p class="card-dek">Set publication defaults and override per article anytime. No lock-in.</p>
+    </div>
+
+    <div class="card" style="padding:20px">
+      <h3 class="card-title">Wallet splits</h3>
+      <p class="card-dek">Author / editor / publisher splits live in Paypr Pro. Payouts flow automatically on schedule.</p>
+    </div>
+
+    <div class="card" style="padding:20px">
+      <h3 class="card-title">Reporting</h3>
+      <p class="card-dek">Reads, gross, fees, net, CSV exports. Clear and quiet.</p>
+    </div>
+  </div>
+
+  <div class="sheet" style="margin-top:20px; background:#0f141d">
+    <h3 class="card-title">Bucks County Pilot</h3>
+    <p class="card-dek">We’re looking to run a quiet pilot with a handful of local papers. Short setup, no heavy lifts.</p>
+    <div style="display:flex; gap:12px; flex-wrap:wrap">
+      <a href="/contact" class="pay-btn" style="text-decoration:none">Contact us about the pilot</a>
+      <a href="/partner/apply" class="pay-btn" style="text-decoration:none">Apply to partner</a>
+      <a href="/walkthrough" class="pay-btn" style="text-decoration:none">See the walkthrough</a>
+    </div>
+  </div>
+
+  <div class="sheet" style="margin-top:20px; background:rgba(14,18,27,.7)">
+    <h3 class="card-title">Benefits</h3>
+    <div style="display:grid; grid-template-columns: 1fr; gap:14px">
+      <div class="card" style="padding:16px"><strong>Instant unlocks</strong><div class="card-dek">One tap, no nags.</div></div>
+      <div class="card" style="padding:16px"><strong>Real revenue</strong><div class="card-dek">Small reads, real dollars—transparent fee.</div></div>
+      <div class="card" style="padding:16px"><strong>Control</strong><div class="card-dek">Set prices and splits anytime.</div></div>
+      <div class="card" style="padding:16px"><strong>Reporting</strong><div class="card-dek">Reads, gross, fees, and nets at a glance.</div></div>
+    </div>
+  </div>
+
+  <div class="sheet" style="margin-top:20px; background:rgba(14,18,27,.7)">
+    <h3 class="card-title">What partners say</h3>
+    <div style="display:grid; grid-template-columns: 1fr; gap:14px">
+      <blockquote class="card" style="padding:16px; margin:0; font-style:italic">Calm and fast. Our readers paid small amounts without friction.</blockquote>
+      <blockquote class="card" style="padding:16px; margin:0; font-style:italic">The console gave us clarity on what’s working—no spreadsheets.</blockquote>
+      <blockquote class="card" style="padding:16px; margin:0; font-style:italic">We kept our voice, our domain, our choices—just added a tiny unlock.</blockquote>
+    </div>
+  </div>
+</section>
+
+<style>
+.walk-grid { display:grid; grid-template-columns: 1fr; gap:20px; }
+@media (min-width: 900px) { .walk-grid { grid-template-columns: 1fr 1fr; } }
+</style>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends "layout.html" %}{% block content %}
+<section class="sheet" style="max-width:1180px; background:#0f141d; margin-top:22px">
+  <div style="display:flex; align-items:center; gap:22px; flex-wrap:wrap">
+    <div style="flex:1; min-width:280px">
+      <h1 class="headline" style="margin:0">Paypr</h1>
+      <p class="dek" style="margin:8px 0 0">Pay once, read now. Tiny payments for independent work—calm, anonymous, fair.</p>
+    </div>
+    <img src="{{ (theme and theme.default_kiosk_hero_url) or 'https://picsum.photos/seed/hero/800/320' }}" alt="Pay once, read now" loading="lazy" width="800" height="320" style="flex:1; border-radius:14px; min-width:280px">
+  </div>
+  <div style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap">
+    <a class="chip" href="/" style="text-decoration:none; {{ '' if selected_category else 'background: var(--accent); color:#0f1115' }}">All</a>
+    {% for c in categories %}
+      <a class="chip" href="/?category={{ c }}" style="text-decoration:none; {{ 'background: var(--accent); color:#0f1115' if selected_category==c else '' }}">{{ c }}</a>
+    {% endfor %}
+  </div>
+</section>
+
+<section style="max-width:1180px; margin:16px auto; padding:0 24px">
+  <form method="get" action="/" style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap">
+    <input type="text" name="q" value="{{ q or '' }}" placeholder="Search publications" style="flex:1; min-width:240px">
+    <select name="sort">
+      <option value="name" {% if sort=='name' %}selected{% endif %}>Name A–Z</option>
+      <option value="name_desc" {% if sort=='name_desc' %}selected{% endif %}>Name Z–A</option>
+      <option value="new" {% if sort=='new' %}selected{% endif %}>Newest</option>
+    </select>
+    <input type="number" name="min" placeholder="Min ¢" value="{{ price_min or '' }}" style="width:96px">
+    <input type="number" name="max" placeholder="Max ¢" value="{{ price_max or '' }}" style="width:96px">
+    {% if selected_category %}<input type="hidden" name="category" value="{{ selected_category }}">{% endif %}
+    <button class="pay-btn" type="submit">Apply</button>
+  </form>
+
+  {% if featured %}
+  <div class="rack" role="region" aria-labelledby="rack-featured">
+    <div class="shelf-label" id="rack-featured">Featured</div>
+    <div class="shelf" style="grid-template-columns: repeat(4, 1fr)">
+      {% for a in featured %}
+      <a class="card" href="/p/{{ a.publisher.slug }}/{{ a.slug }}" style="text-decoration:none">
+        <img class="card-cover" src="{{ a.cover_url }}" alt="{{ a.title }}" loading="lazy">
+        <div class="card-body">
+          <div style="display:flex; justify-content:space-between; align-items:center">
+            <h3 class="card-title" style="margin-right:8px">{{ a.title }}</h3>
+            <span class="chip">${{ ((a.price_cents or a.publisher.default_price_cents)/100) | round(2) }}</span>
+          </div>
+          <div class="card-meta">{{ a.publisher.name }}</div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="rack" role="region" aria-labelledby="rack-all">
+    <div class="shelf-label" id="rack-all">All Publications</div>
+    <div class="shelf" role="list">
+      {% for pub in publishers %}
+      <a class="mag" href="/p/{{ pub.slug }}" role="listitem" aria-label="{{ pub.name }} publication" style="border-color: {{ pub.accent_color or 'rgba(255,255,255,.06)' }}">
+        <div class="mag-spine"></div>
+        <img class="mag-cover" src="{{ pub.hero_url or (theme and theme.default_kiosk_hero_url) }}" alt="{{ pub.name }}" loading="lazy">
+        <div class="mag-title">{{ pub.name }}</div>
+        {% if pub.category %}<div class="chip" style="margin-top:6px">{{ pub.category }}</div>{% endif %}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

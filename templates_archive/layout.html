@@ -1,0 +1,81 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Paypr</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Pay once, read now. Tiny payments for independent work—calm, anonymous, fair.">
+  <meta property="og:title" content="Paypr — Pay once, read now">
+  <meta property="og:description" content="Tiny payments for independent work—calm, anonymous, fair.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="{{ url_for('static', filename='img/social_preview.png') }}">
+  {% block head %}{% endblock %}
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="preload" as="style" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  {% if theme_vars %}
+  <style>
+    :root {
+      {% for k,v in theme_vars.items() %}{{k}}: {{v}};{% endfor %}
+    }
+    {% if theme and theme.watermark_css and (not site or not site.no_gradients) %}
+    body.ink { background-image: {{ theme.watermark_css }}; }
+    {% endif %}
+  </style>
+  {% endif %}
+  {% if theme and (theme.font_body_link or theme.font_headline_link) %}
+  {% if theme.font_body_link %}<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>{% endif %}
+  {% if theme.font_headline_link %}<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>{% endif %}
+  {% if theme.font_body_link %}<link rel="stylesheet" href="{{ theme.font_body_link }}">{% endif %}
+  {% if theme.font_headline_link %}<link rel="stylesheet" href="{{ theme.font_headline_link }}">{% endif %}
+  {% endif %}
+  <style>
+    .topbar a.active { color: var(--accent2); }
+    .chip[title] { cursor: help }
+    @keyframes fadeout { from { opacity:1 } to { opacity:.4 } }
+  </style>
+</head>
+<body class="ink">
+  <a href="#content" class="small-note" style="position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden;">Skip to content</a>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Home">paypr</a>
+    <nav role="navigation" aria-label="Primary">
+      {% set order = (site and site.nav_order_csv.split(',')) or ['newsstand','publishers','platform','admin','wallet','login'] %}
+      {% for key in order %}
+        {% set show = (site and attribute(site, 'nav_'+key)) if site else True %}
+        {% if show %}
+          {% if key=='newsstand' %}<a href="/" class="{% if request.path == '/' %}active{% endif %}" aria-label="Newsstand">Newsstand</a>{% endif %}
+          {% if key=='walkthrough' %}<a href="/walkthrough" class="{% if request.path.startswith('/walkthrough') %}active{% endif %}" aria-label="Walkthrough">Walkthrough</a>{% endif %}
+          {% if key=='bookmarklet' %}<a href="/bookmarklet" class="{% if request.path.startswith('/bookmarklet') %}active{% endif %}" aria-label="Bookmarklet">Bookmarklet</a>{% endif %}
+          {% if key=='publishers' %}<a href="/publishers" class="{% if request.path.startswith('/publishers') %}active{% endif %}" aria-label="Publishers">Publishers</a>{% endif %}
+          {% if key=='platform' %}<a href="/platform" class="{% if request.path.startswith('/platform') %}active{% endif %}" aria-label="Platform Overview">Platform</a>{% endif %}
+          {% if key=='guide' %}<a href="/publisher/guide" class="{% if request.path.startswith('/publisher/guide') %}active{% endif %}" aria-label="Publisher Guide">Guide</a>{% endif %}
+          {% if key=='showcase' %}<a href="/showcase" class="{% if request.path.startswith('/showcase') %}active{% endif %}" aria-label="Showcase">Showcase</a>{% endif %}
+          {% if key=='case' %}<a href="/case/smerconish" class="{% if request.path.startswith('/case/smerconish') %}active{% endif %}" aria-label="Case Study">Case</a>{% endif %}
+          {% if key=='partner' %}<a href="/partner/apply" class="{% if request.path.startswith('/partner') %}active{% endif %}" aria-label="Partner with Paypr">Partner</a>{% endif %}
+          {% if key=='admin' %}<a href="/admin/theme" class="{% if request.path.startswith('/admin/theme') %}active{% endif %}" aria-label="Admin Theme">Admin</a>{% endif %}
+          {% if key=='dev' %}<a href="/dev/tools" class="{% if request.path.startswith('/dev/tools') %}active{% endif %}" aria-label="Dev Tools">Dev</a>{% endif %}
+          {% if key=='wallet' %}<a href="/wallet" class="{% if request.path.startswith('/wallet') %}active{% endif %}" aria-label="Wallet page">Wallet: ${{ g.wallet }}</a>{% endif %}
+          {% if key=='history' %}<a href="/history" class="{% if request.path.startswith('/history') %}active{% endif %}" aria-label="Payment history">History</a>{% endif %}
+          {% if key=='login' %}<a href="/login" class="{% if request.path.startswith('/login') %}active{% endif %}" aria-label="Sign in">Sign in</a>{% endif %}
+        {% endif %}
+      {% endfor %}
+    </nav>
+  </header>
+  <main id="content" role="main">{% block content %}{% endblock %}</main>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div role="status" aria-live="polite" style="position:fixed; left:50%; transform:translateX(-50%); bottom:90px; z-index:9998; display:flex; flex-direction:column; gap:8px">
+      {% for category, message in messages %}
+      <div class="toast" style="background: rgba(26,29,36,.95); color:#E9EDF5; padding:10px 14px; border-radius:10px; border:1px solid rgba(255,255,255,.08)">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+  {% endwith %}
+  <script src="{{ url_for('static', filename='js/image_skeletons.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/paypr.js') }}"></script>
+</body>
+</html>

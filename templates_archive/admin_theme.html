@@ -1,0 +1,125 @@
+{% extends "layout.html" %}{% block content %}
+<article class="sheet" style="max-width:900px">
+  <h1 class="headline" style="margin-top:0">Admin — Appearance & Site</h1>
+  <form method="POST" action="{{ url_for('admin.theme_post') }}" class="tx-table">
+    <h3>Theme</h3>
+    <table class="tx-table">
+      <tbody>
+        <tr><th>Ink</th><td><input type="text" name="color_ink" value="{{ theme.color_ink }}"/></td></tr>
+        <tr><th>Ash</th><td><input type="text" name="color_ash" value="{{ theme.color_ash }}"/></td></tr>
+        <tr><th>Smoke</th><td><input type="text" name="color_smoke" value="{{ theme.color_smoke }}"/></td></tr>
+        <tr><th>Paper</th><td><input type="text" name="color_paper" value="{{ theme.color_paper }}"/></td></tr>
+        <tr><th>Gradient</th><td><input type="text" name="grad" value="{{ theme.grad }}"/></td></tr>
+        <tr><th>Body Font</th><td><input type="text" name="font_body" value="{{ theme.font_body }}"/></td></tr>
+        <tr><th>Body Font Link</th><td><input type="text" name="font_body_link" value="{{ theme.font_body_link or '' }}" placeholder="https://...stylesheet.css"/></td></tr>
+        <tr><th>Headline Font</th><td><input type="text" name="font_headline" value="{{ theme.font_headline }}"/></td></tr>
+        <tr><th>Headline Font Link</th><td><input type="text" name="font_headline_link" value="{{ theme.font_headline_link or '' }}" placeholder="https://...stylesheet.css"/></td></tr>
+        <tr><th>Base Font (px)</th><td><input type="number" name="base_font_px" value="{{ theme.base_font_px }}"/></td></tr>
+        <tr><th>Radius (px)</th><td><input type="number" name="radius_px" value="{{ theme.radius_px }}"/></td></tr>
+        <tr><th>Logo Text</th><td><input type="text" name="logo_text" value="{{ theme.logo_text }}"/></td></tr>
+        <tr><th>Favicon URL</th><td><input type="text" name="favicon_url" value="{{ theme.favicon_url or '' }}"/></td></tr>
+        <tr><th>Watermark CSS</th><td><textarea name="watermark_css" rows="4">{{ theme.watermark_css }}</textarea></td></tr>
+        <tr><th>Default Kiosk Hero</th><td><input type="text" name="default_kiosk_hero_url" value="{{ theme.default_kiosk_hero_url or '' }}"/></td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="margin-top:18px">Site</h3>
+    <table class="tx-table"><tbody>
+      <tr><th>No gradients (flat)</th><td><input type="checkbox" name="no_gradients" {% if site.no_gradients %}checked{% endif %}></td></tr>
+      <tr><th>Layout</th><td>
+        <select name="site_layout">
+          <option value="classic" {% if site.site_layout=='classic' %}selected{% endif %}>Classic</option>
+          <option value="compact" {% if site.site_layout=='compact' %}selected{% endif %}>Compact</option>
+          <option value="wide" {% if site.site_layout=='wide' %}selected{% endif %}>Wide</option>
+        </select>
+      </td></tr>
+      <tr><th>Nav visibility</th><td>
+        {% for key,label in [('newsstand','Newsstand'),('walkthrough','Walkthrough'),('publishers','Publishers'),('platform','Platform'),('guide','Guide'),('showcase','Showcase'),('bookmarklet','Bookmarklet'),('presskit','Press Kit'),('case','Case'),('wallet','Wallet'),('history','History'),('login','Login')] %}
+          <label style="margin-right:10px"><input type="checkbox" name="nav_{{ key }}" {% if attribute(site, 'nav_'+key) %}checked{% endif %}> {{ label }}</label>
+        {% endfor %}
+      </td></tr>
+      <tr><th>Nav order (CSV)</th><td><input type="text" name="nav_order_csv" value="{{ site.nav_order_csv }}"></td></tr>
+    </tbody></table>
+
+    <div style="margin-top:16px">
+      <button class="button primary pay-btn" type="submit">Save Theme</button>
+      <a href="/" class="button secondary" style="margin-left:8px">Back</a>
+      <a href="/admin/splits" class="button secondary" style="margin-left:8px">Manage Splits</a>
+    </div>
+  </form>
+  <div style="margin-top:16px">
+    <details>
+      <summary>Presets</summary>
+      <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap">
+        <form method="POST" action="{{ url_for('admin.theme_post') }}">
+          <input type="hidden" name="color_ink" value="#0F1115">
+          <input type="hidden" name="color_ash" value="#1A1D24">
+          <input type="hidden" name="color_smoke" value="#8E93A4">
+          <input type="hidden" name="color_paper" value="#F5F7FB">
+          <input type="hidden" name="grad" value="linear-gradient(135deg,#FA3D7F 0%,#FF7A3A 35%,#FFC43A 65%,#A05BFF 100%)">
+          <input type="hidden" name="font_body" value="Inter, system-ui, -apple-system, Segoe UI">
+          <input type="hidden" name="font_headline" value="Inter, system-ui, -apple-system, Segoe UI">
+          <input type="hidden" name="base_font_px" value="16">
+          <input type="hidden" name="radius_px" value="14">
+          <button class="pay-btn" type="submit">Default</button>
+        </form>
+        <form method="POST" action="{{ url_for('admin.theme_post') }}">
+          <input type="hidden" name="color_ink" value="#0B0D11">
+          <input type="hidden" name="color_ash" value="#151822">
+          <input type="hidden" name="color_smoke" value="#9CA3B2">
+          <input type="hidden" name="color_paper" value="#FFFFFF">
+          <input type="hidden" name="grad" value="linear-gradient(135deg,#00F5D4 0%,#00BBF9 35%,#9B5DE5 65%,#F15BB5 100%)">
+          <input type="hidden" name="font_body" value="Inter, system-ui, -apple-system, Segoe UI">
+          <input type="hidden" name="font_headline" value="Inter Tight, system-ui, -apple-system, Segoe UI">
+          <input type="hidden" name="base_font_px" value="17">
+          <input type="hidden" name="radius_px" value="16">
+          <button class="pay-btn" type="submit">Neon</button>
+        </form>
+        <form method="POST" action="{{ url_for('admin.theme_post') }}">
+          <input type="hidden" name="color_ink" value="#0A0C12">
+          <input type="hidden" name="color_ash" value="#10131D">
+          <input type="hidden" name="color_smoke" value="#9DB3BD">
+          <input type="hidden" name="color_paper" value="#FFFFFF">
+          <input type="hidden" name="grad" value="linear-gradient(135deg,#2AF7A1 0%,#00E5FF 50%,#FA3D7F 100%)">
+          <input type="hidden" name="font_body" value="IBM Plex Sans, system-ui, -apple-system, Segoe UI">
+          <input type="hidden" name="font_body_link" value="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;600&display=swap">
+          <input type="hidden" name="font_headline" value="Sora, system-ui, -apple-system, Segoe UI">
+          <input type="hidden" name="font_headline_link" value="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&display=swap">
+          <input type="hidden" name="base_font_px" value="16">
+          <input type="hidden" name="radius_px" value="16">
+          <button class="pay-btn" type="submit">Mint/Cyan + Sora</button>
+        </form>
+        <form method="POST" action="{{ url_for('admin.theme_post') }}">
+          <input type="hidden" name="color_ink" value="#0D0E10">
+          <input type="hidden" name="color_ash" value="#141720">
+          <input type="hidden" name="color_smoke" value="#A0ABB7">
+          <input type="hidden" name="color_paper" value="#FFFFFF">
+          <input type="hidden" name="grad" value="linear-gradient(135deg,#FA3D7F 0%,#8A3FFC 50%,#2AF7A1 100%)">
+          <input type="hidden" name="font_body" value="General Sans, system-ui, -apple-system, Segoe UI">
+          <input type="hidden" name="font_headline" value="Clash Display, system-ui, -apple-system, Segoe UI">
+          <input type="hidden" name="base_font_px" value="17">
+          <input type="hidden" name="radius_px" value="18">
+          <button class="pay-btn" type="submit">Fuchsia/Violet + Display</button>
+        </form>
+      </div>
+    </details>
+  </div>
+  <script>
+  (function(){
+    const form = document.querySelector('form[action*="/admin/theme"]');
+    if(!form) return;
+    const root = document.documentElement;
+    const map = {
+      color_ink: '--ink', color_ash: '--ash', color_smoke: '--smoke', color_paper: '--paper', grad: '--grad'
+    };
+    form.addEventListener('input', (e)=>{
+      const t = e.target; if(!t || !t.name) return;
+      if(map[t.name]){ root.style.setProperty(map[t.name], t.value); }
+      if(t.name === 'radius_px'){ root.style.setProperty('--radius', `${t.value}px`); }
+    });
+  })();
+  </script>
+</article>
+{% endblock %}
+
+

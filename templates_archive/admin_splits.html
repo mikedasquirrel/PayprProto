@@ -1,0 +1,60 @@
+{% extends "layout.html" %}{% block content %}
+<section class="sheet" style="max-width:980px">
+  <h1 class="headline" style="margin-top:0">Revenue Split Rules</h1>
+  <p class="dek">Define per-publisher split rules in basis points (bps). 10000 bps = 100%. Any remainder goes to the publisher.</p>
+
+  <form method="POST" action="{{ url_for('admin.splits_post') }}" class="tx-table" style="margin-bottom:20px">
+    <table class="tx-table">
+      <tbody>
+        <tr>
+          <th>Publisher</th>
+          <td>
+            <select name="publisher_id">
+              {% for p in publishers %}
+              <option value="{{ p.id }}">{{ p.name }}</option>
+              {% endfor %}
+            </select>
+          </td>
+        </tr>
+        <tr><th>Role</th><th>Bps</th><th>Label</th></tr>
+        {% for i in range(4) %}
+        <tr>
+          <td><input name="role" placeholder="author/editor/publisher/partner"></td>
+          <td><input name="bps" type="number" min="0" max="10000" placeholder="e.g. 6000"></td>
+          <td><input name="label" placeholder="Display label"></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div style="margin-top:12px">
+      <button class="pay-btn" type="submit">Save splits</button>
+      <a href="/pub/console" class="pay-btn" style="text-decoration:none; background:var(--accent2); color:#0f1115; margin-left:8px">Open console</a>
+    </div>
+  </form>
+
+  <h3 style="margin-top:16px">Current rules</h3>
+  <div class="rack" style="padding:12px">
+    {% for p in publishers %}
+    <div class="card" style="padding:12px; margin-bottom:10px">
+      <div style="display:flex; justify-content:space-between; align-items:center">
+        <strong>{{ p.name }}</strong>
+        {% if rules_map.get(p.id) %}
+        <span class="small-note">{{ rules_map.get(p.id)|length }} rules</span>
+        {% else %}
+        <span class="small-note">No rules</span>
+        {% endif %}
+      </div>
+      {% if rules_map.get(p.id) %}
+      <ul>
+        {% for r in rules_map.get(p.id) %}
+        <li>{{ r.role }} → {{ r.percent_bps }} bps{% if r.recipient_label %} ({{ r.recipient_label }}){% endif %}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
+
+

@@ -1,0 +1,36 @@
+version: '3.8'
+services:
+  paypr:
+    build: .
+    ports:
+      - "51879:51879"
+    environment:
+      - FLASK_ENV=development
+      - PORT=51879
+      - DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/paypr
+      - RATE_LIMIT_STORAGE=redis://redis:6379/0
+    volumes:
+      - .:/app
+    command: bash -lc "python app.py"
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:16
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=paypr
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    ports:
+      - "6380:6379"
+
+volumes:
+  pgdata:

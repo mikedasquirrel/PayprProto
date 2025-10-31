@@ -1,0 +1,31 @@
+{% extends "layout.html" %}{% block content %}
+<section class="sheet" style="max-width:1180px">
+  <h1 class="headline" style="margin-top:0">Showcase</h1>
+  <p class="dek">Distinct publication looks, each linking to a live rack. Unlock a piece in any style to see Paypr’s flow.</p>
+
+  {% for style, pubs in by_style.items() %}
+  <div class="sheet" style="margin-top:16px; background:rgba(14,18,27,.7)">
+    <div style="display:flex; justify-content:space-between; align-items:center">
+      <h3 class="card-title" style="margin:0">{{ style|capitalize }}</h3>
+      <div>
+        <a href="/partner/apply" class="chip" aria-label="Apply to partner">Get this look</a>
+        <span class="small-note">{{ pubs|length }} sources</span>
+      </div>
+    </div>
+    <div class="rack-grid" style="grid-template-columns: repeat(4, 1fr); gap:14px; padding:12px 0 0" role="list">
+      {% for p in pubs[:8] %}
+      <a class="card" href="/p/{{ p.slug }}" role="listitem" aria-label="{{ p.name }} rack" style="text-decoration:none; border-color: {{ p.accent_color or 'rgba(255,255,255,.06)' }}">
+        <img class="card-cover{% if style in ['newspaper'] %} grayscale{% endif %}" src="{{ p.hero_url or (theme and theme.default_kiosk_hero_url) }}" alt="{{ p.name }}" loading="lazy">
+        <div class="card-body">
+          <div style="display:flex; justify-content:space-between; align-items:center">
+            <div class="card-title{% if style in ['literary','poetry'] %} serif{% endif %}" style="margin-right:8px">{{ p.name }}</div>
+            {% if p.category %}<span class="chip">{{ p.category }}</span>{% endif %}
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</section>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "layout.html" %}{% block content %}
+<section class="sheet" style="max-width:980px">
+  <h1 class="headline" style="margin-top:0">Platform Overview</h1>
+  <p class="dek">Paypr can be as light or as full as you want. Use just the unlock button—or turn on a complete toolkit. Everything is optional and modular.</p>
+
+  <div class="walk-grid">
+    <div class="card" style="padding:18px">
+      <h3 class="card-title">Dashboard</h3>
+      <p class="card-dek">Reads, gross, fees, net—by day and week—with CSV export.</p>
+    </div>
+    <div class="card" style="padding:18px">
+      <h3 class="card-title">Site management</h3>
+      <p class="card-dek">Theme settings, media library, and a clean front-end for your work.</p>
+    </div>
+    <div class="card" style="padding:18px">
+      <h3 class="card-title">Article pricing</h3>
+      <p class="card-dek">Publication defaults with per-article overrides (10–99¢ typical).</p>
+    </div>
+    <div class="card" style="padding:18px">
+      <h3 class="card-title">Content management</h3>
+      <p class="card-dek">Draft/publish states, simple imports, optional RSS.</p>
+    </div>
+    <div class="card" style="padding:18px">
+      <h3 class="card-title">Author accounts</h3>
+      <p class="card-dek">Invite authors and editors; use split rules to share revenue.</p>
+    </div>
+    <div class="card" style="padding:18px">
+      <h3 class="card-title">Payments</h3>
+      <p class="card-dek">Wallet top-ups, refunds window, and scheduled payouts.</p>
+    </div>
+  </div>
+
+  <div class="sheet" style="margin-top:18px; background:rgba(14,18,27,.7)">
+    <h3 class="card-title">Pick your mix</h3>
+    <p class="card-dek">You can start with a single button and add modules over time. Your domain, your voice—Paypr fits quietly.</p>
+    <div style="display:flex; gap:10px; flex-wrap:wrap">
+      <a class="pay-btn" href="/publisher/guide" style="text-decoration:none">Publisher guide</a>
+      <a class="pay-btn" href="/partner/apply" style="text-decoration:none">Apply to partner</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "layout.html" %}{% block content %}
+<section class="sheet">
+  <h2>Page not found</h2>
+  <p>We couldn’t find that page. Try the <a href="/">newsstand</a> or search below.</p>
+  <form method="get" action="/" style="margin-top:10px">
+    <input type="text" name="q" placeholder="Search publications" aria-label="Search publications">
+    <button class="pay-btn" type="submit">Search</button>
+  </form>
+</section>
+{% endblock %}

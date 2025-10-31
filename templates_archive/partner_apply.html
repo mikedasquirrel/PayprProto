@@ -1,0 +1,21 @@
+{% extends "layout.html" %}{% block content %}
+<section class="sheet" style="max-width:800px">
+  <h1 class="headline">Apply to partner</h1>
+  <p class="dek">Tell us a bit about your publication. We’ll get back quickly.</p>
+  <form method="POST" action="{{ url_for('public.contact_post') }}" class="tx-table">
+    <table class="tx-table">
+      <tbody>
+        <tr><th>Name</th><td><input type="text" name="name" required></td></tr>
+        <tr><th>Email</th><td><input type="email" name="email" required></td></tr>
+        <tr><th>Domain</th><td><input type="text" name="domain" placeholder="example.com"></td></tr>
+        <tr><th>Audience</th><td><input type="text" name="audience" placeholder="e.g., 50k monthly readers"></td></tr>
+        <tr><th>Message</th><td><textarea name="message" rows="5" placeholder="Link your site, audience size, and goals" required></textarea></td></tr>
+        <tr style="display:none"><th>Website</th><td><input type="text" name="website" value=""></td></tr>
+      </tbody>
+    </table>
+    <div style="margin-top:12px"><button class="pay-btn" type="submit">Send</button></div>
+  </form>
+</section>
+{% endblock %}
+
+

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paypr - One-Click Pay-to-Unlock Articles</title>
+    <meta name="description" content="Paypr - Seamless micropayments for quality journalism">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="/static/css/reset.css">
+    <link rel="stylesheet" href="/static/css/variables.css">
+    <link rel="stylesheet" href="/static/css/components.css">
+    <link rel="stylesheet" href="/static/css/pages.css">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+</head>
+<body>
+    <!-- App Container -->
+    <div id="app">
+        <!-- Navigation -->
+        <nav id="navbar"></nav>
+        
+        <!-- Main Content -->
+        <main id="content">
+            <div class="loading-state">
+                <div class="spinner"></div>
+                <p>Loading...</p>
+            </div>
+        </main>
+        
+        <!-- Toast Container -->
+        <div id="toast-container"></div>
+        
+        <!-- Modal Container -->
+        <div id="modal-container"></div>
+    </div>
+    
+    <!-- Core Scripts -->
+    <script type="module" src="/static/js/api.js"></script>
+    <script type="module" src="/static/js/auth.js"></script>
+    <script type="module" src="/static/js/router.js"></script>
+    <script type="module" src="/static/js/components/navbar.js"></script>
+    <script type="module" src="/static/js/components/toast.js"></script>
+    <script type="module" src="/static/app.js"></script>
+</body>
+</html>
+

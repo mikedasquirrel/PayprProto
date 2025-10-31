@@ -1,0 +1,50 @@
+{% extends "layout.html" %}{% block content %}
+<section class="sheet" style="max-width:1000px">
+  <h1 class="headline">Press Kit</h1>
+  <p class="dek">Logos, palette, and screenshots for articles and mentions.</p>
+
+  <div class="walk-grid">
+    <div class="card" style="padding:20px">
+      <h3 class="card-title">Logo</h3>
+      <p class="card-dek">Use the wordmark on dark backgrounds. Please keep the gradient as-is.</p>
+      <img src="{{ url_for('static', filename='favicon.svg') }}" alt="Paypr logo" width="128" height="128">
+      <p><a class="pay-btn" style="text-decoration:none" href="{{ url_for('static', filename='favicon.svg') }}" download>Download SVG</a></p>
+    </div>
+
+    <div class="card" style="padding:20px">
+      <h3 class="card-title">Palette</h3>
+      <p class="card-dek">Ink, ash, smoke, paper; gradient accents for small moments.</p>
+      <div style="display:flex; gap:8px; flex-wrap:wrap">
+        <div style="width:80px; height:40px; background:#0F1115; border-radius:8px"></div>
+        <div style="width:80px; height:40px; background:#1A1D24; border-radius:8px"></div>
+        <div style="width:80px; height:40px; background:#8E93A4; border-radius:8px"></div>
+        <div style="width:80px; height:40px; background:#F5F7FB; border-radius:8px"></div>
+        <div style="width:160px; height:40px; background: linear-gradient(135deg,#FA3D7F,#FF7A3A,#FFC43A,#A05BFF); border-radius:8px"></div>
+      </div>
+    </div>
+
+    <div class="card" style="padding:20px">
+      <h3 class="card-title">Screenshots</h3>
+      <p class="card-dek">Newsstand, preview + pay, publisher console. Contact us for a folder.</p>
+      <img class="card-cover" src="https://picsum.photos/seed/press1/1200/600" loading="lazy" alt="Newsstand" width="1200" height="600" onclick="openLightbox(this.src)">
+    </div>
+  </div>
+
+  <div style="margin-top:14px">
+    <a class="pay-btn" href="/presskit.zip" style="text-decoration:none">Download ZIP</a>
+  </div>
+</section>
+
+<style>
+.walk-grid { display:grid; grid-template-columns: 1fr; gap:20px; }
+@media (min-width: 900px) { .walk-grid { grid-template-columns: 1fr 1fr; } }
+</style>
+<script>
+function openLightbox(src){
+  const wrap = document.createElement('div');
+  wrap.style.position='fixed'; wrap.style.inset='0'; wrap.style.background='rgba(0,0,0,.8)'; wrap.style.zIndex='9999'; wrap.addEventListener('click',()=>wrap.remove());
+  const img = document.createElement('img'); img.src = src; img.style.maxWidth='90%'; img.style.maxHeight='90%'; img.style.position='absolute'; img.style.top='50%'; img.style.left='50%'; img.style.transform='translate(-50%,-50%)'; img.style.borderRadius='10px';
+  wrap.appendChild(img); document.body.appendChild(wrap);
+}
+</script>
+{% endblock %}

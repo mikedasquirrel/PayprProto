@@ -1,0 +1,78 @@
+{% extends "layout.html" %}
+{% block head %}
+<meta property="og:title" content="{{ article.title }}">
+<meta property="og:description" content="{{ (article.dek or '')[:160] }}">
+<meta property="og:image" content="{{ article.cover_url }}">
+<link rel="canonical" href="/p/{{ article.publisher.slug }}/{{ article.slug }}">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "{{ article.title|e }}",
+  "description": "{{ (article.dek or '')[:160]|e }}",
+  "author": {"@type":"Person","name":"{{ (article.author or 'Staff')|e }}"},
+  "publisher": {"@type":"Organization","name":"{{ article.publisher.name|e }}"},
+  "image": ["{{ article.cover_url|e }}"],
+  "datePublished": "{{ article.created_at.date().isoformat() if article.created_at else '' }}"
+}
+</script>
+{% endblock %}
+{% block content %}
+<article class="sheet" style="max-width:900px">
+  <h1 class="headline">{{ article.title }}</h1>
+  <p class="dek">{{ article.dek }}</p>
+  <div class="meta" style="background:rgba(10,12,18,.6); border:1px solid rgba(255,255,255,.06); padding:10px 12px; border-radius:12px; display:flex; justify-content:space-between; align-items:center">
+    <span>By {{ article.author }} • {{ article.publisher.name }}</span>
+    <span id="read-progress" class="small-note">0%</span>
+  </div>
+
+  {% if unlocked %}
+    {% if article.media_type == 'pdf' and config.FEATURE_PDF %}
+      <object data="{{ article.body_html|safe }}" type="application/pdf" width="100%" height="800px">
+        <p><a href="{{ article.body_html|safe }}" target="_blank" rel="noopener">Open PDF</a></p>
+      </object>
+    {% elif article.media_type == 'audio' and config.FEATURE_AUDIO %}
+      <div class="body">{{ article.body_html|safe }}</div>
+    {% else %}
+      <div class="body">{{ article.body_html|safe }}</div>
+    {% endif %}
+    <div style="margin-top:12px; display:flex; align-items:center; gap:8px">
+      <button class="pay-btn" id="request-refund" data-article="{{ article.id }}" style="background:var(--accent2); color:#0f1115">Refund last read</button>
+      <span class="small-note">Refund window: <span id="refund-countdown">09:59</span></span>
+      <span id="split-chips" class="small-note"></span>
+    </div>
+  {% else %}
+    <div class="preview">{{ article.body_preview|safe }}</div>
+    <div style="margin:14px 0; display:flex; align-items:center; gap:10px">
+      <button class="pay-btn" data-article="{{ article.id }}">
+        Pay {{ ((article.price_cents or article.publisher.default_price_cents)/100) | round(2) }} with Paypr
+      </button>
+      <span class="chip">10% platform fee</span>
+    </div>
+    <div class="small-note">Your payment goes directly to {{ article.publisher.name }}.</div>
+    <div id="full-article" class="hidden">
+      {% if article.media_type == 'pdf' and config.FEATURE_PDF %}
+        {{ article.body_html|safe }}
+      {% else %}
+        {{ article.body_html|safe }}
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="sheet" style="margin-top:16px; background:rgba(14,18,27,.7)">
+    <h3 class="card-title">More from {{ article.publisher.name }}</h3>
+    <div class="rack-grid" style="grid-template-columns: repeat(3, 1fr);">
+      {% for a2 in article.publisher.articles[:6] %}
+        {% if a2.id != article.id %}
+        <a class="card" href="/p/{{ article.publisher.slug }}/{{ a2.slug }}">
+          <img class="card-cover" src="{{ a2.cover_url }}" alt="{{ a2.title }}" loading="lazy">
+          <div class="card-body">
+            <div class="card-title">{{ a2.title }}</div>
+          </div>
+        </a>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</article>
+{% endblock %}

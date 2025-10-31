@@ -1,0 +1,42 @@
+{% extends "layout.html" %}{% block content %}
+<section class="sheet" style="max-width:980px">
+  <h1 class="headline" style="margin-top:0">Publisher Guide</h1>
+  <p class="dek">A quick walk-through of the tools you can turn on.</p>
+
+  <div class="walk-grid">
+    <div class="card" style="padding:16px">
+      <h3 class="card-title">Console</h3>
+      <p class="card-dek">All-time and 7-day views, per-publication metrics, CSV export, and trend sparklines.</p>
+    </div>
+    <div class="card" style="padding:16px">
+      <h3 class="card-title">Splits</h3>
+      <p class="card-dek">Assign basis points to author/editor/publisher. Remainders route to publisher.</p>
+    </div>
+    <div class="card" style="padding:16px">
+      <h3 class="card-title">Pricing</h3>
+      <p class="card-dek">Set defaults and adjust per article. Typical reads run 10–99¢.</p>
+    </div>
+    <div class="card" style="padding:16px">
+      <h3 class="card-title">Theme</h3>
+      <p class="card-dek">Colors, fonts, radius, watermark—live preview and quick presets.</p>
+    </div>
+    <div class="card" style="padding:16px">
+      <h3 class="card-title">Media</h3>
+      <p class="card-dek">Upload hero and cover art. Manage library and delete assets.</p>
+    </div>
+    <div class="card" style="padding:16px">
+      <h3 class="card-title">Access</h3>
+      <p class="card-dek">Publisher users (email login) with scoped access to the console.</p>
+    </div>
+  </div>
+
+  <div class="sheet" style="margin-top:18px; background:rgba(14,18,27,.7)">
+    <h3 class="card-title">Questions?</h3>
+    <p class="card-dek">We can manage everything for you or hand you the keys. It’s your choice.</p>
+    <div style="display:flex; gap:10px; flex-wrap:wrap">
+      <a class="pay-btn" href="/contact" style="text-decoration:none">Contact</a>
+      <a class="pay-btn" href="/partner/apply" style="text-decoration:none">Apply</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

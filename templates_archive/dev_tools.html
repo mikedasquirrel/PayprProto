@@ -1,0 +1,49 @@
+{% extends "layout.html" %}{% block content %}
+<section class="sheet" style="max-width:720px">
+  <h2>Dev Tools</h2>
+  <p class="dek">Reseed the database with demo publishers and articles.</p>
+  <form id="reseed-form" class="tx-table" onsubmit="return false;">
+    <table class="tx-table"><tbody>
+      <tr><th>Publishers</th><td><input type="number" id="num_publishers" value="8" min="1" max="200"></td></tr>
+      <tr><th>Articles per publisher</th><td><input type="number" id="articles_per_publisher" value="10" min="1" max="50"></td></tr>
+      <tr><th>Price tiers (cents)</th><td><input type="text" id="tiers" value="10,15,25,39,50,75,99"></td></tr>
+      <tr><th>Categories</th><td><input type="text" id="cats" value="Local,Politics,Sports,Arts,Business,Tech,Food,Education,Opinion,Lifestyle,Investigations"></td></tr>
+    </tbody></table>
+    <div style="margin-top:12px"><button id="do-reseed" class="pay-btn">Run reseed</button></div>
+  </form>
+  <div style="margin-top:12px">
+    <button class="pay-btn" id="preset-small">Preset: Small (6×6)</button>
+    <button class="pay-btn" id="preset-large" style="margin-left:8px">Preset: Large (40×12)</button>
+    <button class="pay-btn" id="db-reset" style="margin-left:8px; background:var(--accent2); color:#0f1115">Danger: Reset DB</button>
+  </div>
+  <pre id="reseed-out" class="small-note" style="margin-top:12px"></pre>
+</section>
+
+<script>
+(function(){
+  async function post(url, body){
+    const res = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body: JSON.stringify(body||{})});
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data.error||'Request failed');
+    return data;
+  }
+  const btn = document.getElementById('do-reseed');
+  const out = document.getElementById('reseed-out');
+  async function run(pubs, arts){
+    out.textContent = 'Running…';
+    try{
+      const tiers = document.getElementById('tiers').value.split(',').map(s=>parseInt(s.trim(),10)).filter(n=>!isNaN(n));
+      const cats = document.getElementById('cats').value.split(',').map(s=>s.trim()).filter(Boolean);
+      const data = await post('/dev/reseed', { num_publishers: pubs, articles_per_publisher: arts, price_tiers_cents: tiers, categories: cats });
+      out.textContent = JSON.stringify(data, null, 2);
+    }catch(e){ out.textContent = e.message || 'Failed'; }
+  }
+  if(btn){ btn.addEventListener('click', ()=>{ run(parseInt(document.getElementById('num_publishers').value,10), parseInt(document.getElementById('articles_per_publisher').value,10)); }); }
+  const small = document.getElementById('preset-small'); if(small){ small.addEventListener('click', ()=> run(6,6)); }
+  const large = document.getElementById('preset-large'); if(large){ large.addEventListener('click', ()=> run(40,12)); }
+  const reset = document.getElementById('db-reset'); if(reset){ reset.addEventListener('click', async ()=>{ try{ await post('/dev/reset',{}); out.textContent = 'DB reset complete'; }catch(e){ out.textContent = e.message||'Reset failed'; } }); }
+})();
+</script>
+{% endblock %}
+
+

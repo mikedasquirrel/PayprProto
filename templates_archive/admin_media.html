@@ -1,0 +1,32 @@
+{% extends "layout.html" %}{% block content %}
+<section class="sheet" style="max-width:980px">
+  <h1 class="headline">Media Library</h1>
+  <form method="POST" action="{{ url_for('admin.media_upload') }}" enctype="multipart/form-data" style="margin:12px 0">
+    <input type="file" name="file" accept="image/*,video/*">
+    <button class="pay-btn" type="submit">Upload</button>
+  </form>
+  <form method="POST" action="{{ url_for('admin.media_upload') }}">
+    <div class="rack-grid" style="grid-template-columns: repeat(4, 1fr)">
+      {% for f in files %}
+      <div class="card" style="padding:12px">
+        <div class="card-body">
+          <label style="display:flex; align-items:center; gap:8px">
+            <input type="checkbox" name="delete_many" value="{{ f }}">
+            <div class="card-title" style="margin:0">{{ f }}</div>
+          </label>
+          <img class="card-cover" src="{{ url_for('static', filename='img/' ~ f) }}" alt="{{ f }}" loading="lazy">
+          <div class="card-meta">{{ url_for('static', filename='img/' ~ f, _external=True) }}</div>
+          <form method="POST" action="{{ url_for('admin.media_upload') }}" onsubmit="return confirm('Delete this file?')" style="margin-top:8px">
+            <input type="hidden" name="delete" value="{{ f }}">
+            <button class="pay-btn" type="submit" style="background:var(--accent2); color:#0f1115">Delete</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div style="margin-top:12px"><button class="pay-btn" type="submit" onclick="return confirm('Delete selected files?')">Delete selected</button></div>
+  </form>
+</section>
+{% endblock %}
+
+
