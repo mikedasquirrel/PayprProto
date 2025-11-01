@@ -1,0 +1,44 @@
+{% extends "layout.html" %}{% block content %}
+<section class="sheet" style="max-width:780px">
+  <h2 class="headline" style="font-size:28px">Wallet</h2>
+  <div class="sheet" style="background:rgba(14,18,27,.7); border:1px solid rgba(255,255,255,.06); display:flex; justify-content:space-between; align-items:center">
+    <p class="dek" style="margin:0">Balance</p>
+    <div class="chip" style="font-size:16px">${{ g.wallet }}</div>
+  </div>
+  <div id="balance-chart" class="card" style="margin-top:14px; padding:14px">
+    <h3 class="card-title">Recent activity</h3>
+    <svg id="balance-spark" width="500" height="60" viewBox="0 0 500 60" preserveAspectRatio="none"></svg>
+  </div>
+  <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; margin-top:14px">
+    <form method="post" action="/wallet/topup" class="card" style="padding:14px">
+      <input type="hidden" name="amount_cents" value="500">
+      <h3 class="card-title">Top up $5</h3>
+      <button type="submit" class="pay-btn">Add $5</button>
+    </form>
+    <form method="post" action="/wallet/topup" class="card" style="padding:14px">
+      <input type="hidden" name="amount_cents" value="1000">
+      <h3 class="card-title">Top up $10</h3>
+      <button type="submit" class="pay-btn">Add $10</button>
+    </form>
+    <form method="post" action="/wallet/topup" class="card" style="padding:14px">
+      <input type="hidden" name="amount_cents" value="2500">
+      <h3 class="card-title">Top up $25</h3>
+      <button type="submit" class="pay-btn">Add $25</button>
+    </form>
+  </div>
+  <div style="margin-top:16px">
+    <button class="pay-btn" data-topup-stripe="500">Test Stripe top-up $5</button>
+    <button class="pay-btn" data-topup-stripe="1000">Test Stripe top-up $10</button>
+  </div>
+</section>
+<script>
+(function(){
+  const el = document.getElementById('balance-spark'); if(!el) return;
+  const points = [5,6,6,7,9,8,12,10,11,13,12,14];
+  const max = Math.max(...points);
+  const step = 500/(points.length-1);
+  const pts = points.map((v,i)=>`${(i*step).toFixed(1)},${(60 - (v/max)*60).toFixed(1)}`).join(' ');
+  el.innerHTML = `<polyline fill="none" stroke="#2AF7A1" stroke-width="3" points="${pts}"/>`;
+})();
+</script>
+{% endblock %}

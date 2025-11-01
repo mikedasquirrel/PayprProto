@@ -330,6 +330,106 @@ def list_categories():
     return jsonify({"categories": cats})
 
 
+@bp.route("/publications-showcase", methods=["GET"])
+@csrf.exempt
+def publications_showcase():
+    """Get showcase data for publications using Paypr (fake examples for demo)."""
+    showcase_pubs = [
+        {
+            "name": "The Metropolitan Review",
+            "category": "News",
+            "logo": "🏛️",
+            "quote": "Paypr helped us increase digital revenue by 240% while maintaining editorial independence.",
+            "since_year": 2023,
+            "article_count": 1200,
+            "accent_color": "#2563eb"
+        },
+        {
+            "name": "TechVision Daily",
+            "category": "Technology",
+            "logo": "💻",
+            "quote": "Our readers love the no-subscription model. Engagement is up 3x since switching to Paypr.",
+            "since_year": 2024,
+            "article_count": 850,
+            "accent_color": "#7c3aed"
+        },
+        {
+            "name": "Culture & Commentary",
+            "category": "Opinion",
+            "logo": "✍️",
+            "quote": "Finally, a way to monetize quality opinion pieces without paywalls. Our writers are thriving.",
+            "since_year": 2023,
+            "article_count": 2400,
+            "accent_color": "#dc2626"
+        },
+        {
+            "name": "The Athletic Insider",
+            "category": "Sports",
+            "logo": "⚽",
+            "quote": "Paypr's micropayments let fans pay for what they want. Perfect for sports coverage.",
+            "since_year": 2024,
+            "article_count": 3100,
+            "accent_color": "#059669"
+        },
+        {
+            "name": "ScienceNow",
+            "category": "Science",
+            "logo": "🔬",
+            "quote": "We're reaching new audiences and funding quality science journalism sustainably.",
+            "since_year": 2023,
+            "article_count": 980,
+            "accent_color": "#0891b2"
+        },
+        {
+            "name": "Modern Living Magazine",
+            "category": "Lifestyle",
+            "logo": "🌿",
+            "quote": "The reader experience is seamless. Our subscribers and casual readers both love it.",
+            "since_year": 2024,
+            "article_count": 1650,
+            "accent_color": "#ea580c"
+        },
+        {
+            "name": "Global Finance Report",
+            "category": "Business",
+            "logo": "📊",
+            "quote": "Paypr's transparent split system makes it easy to compensate our expert contributors fairly.",
+            "since_year": 2023,
+            "article_count": 2200,
+            "accent_color": "#7c2d12"
+        },
+        {
+            "name": "The Investigator",
+            "category": "News",
+            "logo": "🔍",
+            "quote": "Deep investigative journalism needs sustainable funding. Paypr delivers.",
+            "since_year": 2024,
+            "article_count": 420,
+            "accent_color": "#1e40af"
+        },
+        {
+            "name": "Creative Quarterly",
+            "category": "Arts",
+            "logo": "🎨",
+            "quote": "Artists and writers get paid fairly. Readers get quality content. Win-win.",
+            "since_year": 2023,
+            "article_count": 890,
+            "accent_color": "#be185d"
+        },
+        {
+            "name": "The Policy Brief",
+            "category": "Politics",
+            "logo": "🏛️",
+            "quote": "Unbiased political analysis, funded by readers not advertisers. That's the Paypr model.",
+            "since_year": 2024,
+            "article_count": 1340,
+            "accent_color": "#4338ca"
+        }
+    ]
+    
+    return jsonify({"publications": showcase_pubs})
+
+
 @bp.route("/contact", methods=["POST"])
 @csrf.exempt
 @limiter.limit("5/hour")

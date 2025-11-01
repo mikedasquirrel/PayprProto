@@ -14,6 +14,10 @@ import { renderLogin } from './js/pages/login.js';
 import { renderSmerconishShowcase, renderSmerconishArticle } from './js/pages/showcase-smerconish.js';
 import { renderAuthorDashboard } from './js/pages/author-dashboard.js';
 import { renderAuthorSubmit } from './js/pages/author-submit.js';
+import { renderAbout } from './js/pages/about.js';
+import { renderPublications } from './js/pages/publications.js';
+import { renderPlatform } from './js/pages/platform.js';
+import { renderForWriters } from './js/pages/for-writers.js';
 
 // Initialize app
 async function init() {
@@ -26,15 +30,25 @@ async function init() {
   await auth.checkAuth();
 
   // Register routes
+  
+  // Platform pages
+  router.register('/about', renderAbout);
+  router.register('/publications', renderPublications);
+  router.register('/platform', renderPlatform);
+  router.register('/for-writers', renderForWriters);
+  
+  // Browse pages
   router.register('/', renderNewsstand);
   router.register('/publishers', renderPublishers);
   router.register('/p/:slug', renderPublisher);
   router.register('/article/:id', renderArticle);
+  
+  // Account pages
   router.register('/wallet', renderWallet);
   router.register('/history', renderHistory);
   router.register('/login', renderLogin);
   
-  // Showcase routes
+  // Showcase routes (demo)
   router.register('/showcase/smerconish', renderSmerconishShowcase);
   router.register('/showcase/smerconish/article/:id', renderSmerconishArticle);
   

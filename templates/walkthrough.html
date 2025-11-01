@@ -1,0 +1,116 @@
+{% extends "layout.html" %}{% block content %}
+<section class="sheet" style="max-width:980px">
+  <h1 class="headline">How Paypr works</h1>
+  <p class="dek">A simple way to read one article at a time—no accounts to manage, no bundles, just a small thank-you for the work.</p>
+
+  <div style="margin:12px 0 20px; display:flex; gap:10px; flex-wrap:wrap">
+    <a class="pay-btn" href="#tour-1" style="text-decoration:none">Start mini-tour</a>
+    <a class="pay-btn" href="/" style="text-decoration:none">Go to newsstand</a>
+  </div>
+
+  <div id="tour-1" class="walk-grid">
+    <div class="card" style="padding:20px">
+      <h3 class="card-title">1. Browse the newsstand</h3>
+      <p class="card-dek">Independent publications with their own voices. Open a rack and pick a cover that catches your eye.</p>
+      <img class="card-cover" src="https://picsum.photos/seed/walk1/1200/600" loading="lazy" alt="Newsstand preview" width="1200" height="600">
+    </div>
+
+    <div class="card" style="padding:20px">
+      <h3 class="card-title">2. Preview first</h3>
+      <p class="card-dek">Read the opening. If it’s for you today, press the Pay button. Prices are small—often 10–50¢—set by each publication.</p>
+      <img class="card-cover" src="https://picsum.photos/seed/walk2/1200/600" loading="lazy" alt="Preview and pay" width="1200" height="600">
+    </div>
+
+    <div class="card" style="padding:20px">
+      <h3 class="card-title">3. One tap unlock</h3>
+      <p class="card-dek">We debit your wallet and unlock instantly. Your balance and history live in the top bar—quiet and private.</p>
+      <div class="flow" id="pay-flow" aria-live="polite">
+        <div class="flow-stage active" data-state="pay">Pay {{ '$0.25' }} →</div>
+        <div class="flow-stage" data-state="verify">Verify token →</div>
+        <div class="flow-stage" data-state="unlock">Unlocked ✓</div>
+        <div class="flow-stage" data-state="refund">Refund window</div>
+      </div>
+      <div style="margin-top:8px"><button id="simulate-pay" class="pay-btn">Simulate</button></div>
+    </div>
+
+    <div class="card" style="padding:20px">
+      <h3 class="card-title">4. Publishers are paid</h3>
+      <p class="card-dek">Your payment goes directly to the publication (with a small platform fee). Simple and transparent.</p>
+      <img class="card-cover" src="https://picsum.photos/seed/walk4/1200/600" loading="lazy" alt="Publisher console" width="1200" height="600">
+    </div>
+
+    <div class="card" style="padding:20px">
+      <h3 class="card-title">5. Wallet top-ups</h3>
+      <p class="card-dek">Add $5, $10, or $25 when you like. No subscriptions, no auto-renew.</p>
+      <img class="card-cover" src="https://picsum.photos/seed/walk5/1200/600" loading="lazy" alt="Wallet" width="1200" height="600">
+    </div>
+
+    <div class="card" style="padding:20px">
+      <h3 class="card-title">Privacy and calm</h3>
+      <p class="card-dek">No likes, no comment counters. Read in peace. This is a quiet street, not a plaza.</p>
+      <img class="card-cover" src="https://picsum.photos/seed/walk6/1200/600" loading="lazy" alt="Calm reading" width="1200" height="600">
+    </div>
+  </div>
+
+  <div class="sheet" style="margin-top:20px; background:rgba(14,18,27,.7)">
+    <h3 class="card-title">Realistic prices and math</h3>
+    <p class="card-dek">Typical reads range from 10¢ to 99¢. A 10% platform fee is deducted; the rest goes to the publication (and splits) instantly.</p>
+    <ul>
+      <li>Example A: 25¢ read → 2.5¢ fee → 22.5¢ net</li>
+      <li>Example B: 50¢ read → 5¢ fee → 45¢ net</li>
+      <li>Example C: 99¢ read → 9.9¢ fee → 89.1¢ net</li>
+    </ul>
+  </div>
+
+  <div class="sheet" style="margin-top:20px; background:#0f141d">
+    <h3 class="card-title">Try it</h3>
+    <p class="card-dek">Start at the newsstand, pick a cover, preview, and unlock. You can refund within ten minutes if you change your mind.</p>
+    <div style="display:flex; gap:12px; flex-wrap:wrap">
+      <a href="/" class="pay-btn" style="text-decoration:none">Go to newsstand</a>
+      <a href="/wallet" class="pay-btn" style="text-decoration:none">Open wallet</a>
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+  const sim = document.getElementById('simulate-pay');
+  if (sim){
+    sim.addEventListener('click', ()=>{
+      const stages = document.querySelectorAll('#pay-flow .flow-stage');
+      let i=0;
+      stages.forEach(s=>s.classList.remove('active','done'));
+      const next = ()=>{
+        if(i>0) stages[i-1].classList.add('done');
+        if(i<stages.length){
+          stages[i].classList.add('active');
+          i+=1; setTimeout(next, 650);
+        }
+      };
+      next();
+    });
+  }
+})();
+// Simple interactive slider for steps
+(function(){
+  const grid = document.getElementById('tour-1'); if(!grid) return;
+  const cards = Array.from(grid.querySelectorAll('.card'));
+  const nav = document.createElement('div'); nav.style.display='flex'; nav.style.gap='8px'; nav.style.margin='10px 0';
+  cards.forEach((_,i)=>{
+    const b = document.createElement('button'); b.className = 'chip'; b.textContent = String(i+1);
+    b.addEventListener('click', ()=>{ cards.forEach(c=>c.style.display='none'); cards[i].style.display='block'; });
+    nav.appendChild(b);
+  });
+  grid.parentNode.insertBefore(nav, grid);
+})();
+</script>
+
+<style>
+.walk-grid { display:grid; grid-template-columns: 1fr; gap:20px; }
+@media (min-width: 900px) { .walk-grid { grid-template-columns: 1fr 1fr; } }
+.flow { display:flex; gap:8px; margin-top:8px }
+.flow-stage { padding:8px 10px; border-radius:999px; background: rgba(255,255,255,.08); color:#E9EDF5 }
+.flow-stage.active { background: var(--grad); color:#0f1115; font-weight:700 }
+.flow-stage.done { background: rgba(60,230,140,.28); color:#d7ffe8 }
+</style>
+{% endblock %}
