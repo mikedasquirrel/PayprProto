@@ -55,10 +55,20 @@ class Navbar {
           
           <div class="navbar-divider"></div>
           
-          <!-- User/Demo Section -->
+          <!-- User Section -->
+          ${isAuthenticated ? `
+            <div class="navbar-section">
+              <a href="#/author/dashboard" class="navbar-link">✍️ Author</a>
+              <a href="#/publisher/console" class="navbar-link">📰 Publisher</a>
+              <a href="#/admin/dashboard" class="navbar-link">⚙️ Admin</a>
+            </div>
+            
+            <div class="navbar-divider"></div>
+          ` : ''}
+          
+          <!-- Account Section -->
           <div class="navbar-section">
             ${isAuthenticated ? `
-              <a href="#/author/dashboard" class="navbar-link">Author</a>
               <a href="#/wallet" class="navbar-link wallet-badge">
                 <span>💰</span>
                 <span class="wallet-amount">$${(walletBalance / 100).toFixed(2)}</span>

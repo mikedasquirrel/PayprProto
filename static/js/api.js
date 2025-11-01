@@ -128,6 +128,14 @@ class APIClient {
     return this.post('/account/topup/stripe', { amount_cents: amountCents });
   }
 
+  async createCheckoutSession(amountCents) {
+    return this.post('/account/topup/checkout', { amount_cents: amountCents });
+  }
+
+  async verifyCheckoutSession(sessionId) {
+    return this.post('/account/topup/verify-session', { session_id: sessionId });
+  }
+
   async getTransactions() {
     return this.get('/account/transactions');
   }

@@ -3,6 +3,10 @@ import api from '../api.js';
 import auth from '../auth.js';
 import router from '../router.js';
 import { showToast } from '../components/toast.js';
+import { createLineChart, createBarChart, createStatsGrid, destroyChart, chartUtils } from '../components/charts.js';
+
+let earningsChart = null;
+let contentChart = null;
 
 export async function renderAuthorDashboard() {
   const content = document.getElementById('content');
@@ -106,25 +110,48 @@ export async function renderAuthorDashboard() {
         </div>
 
         <!-- Earnings Overview -->
-        <div class="grid grid-3" style="margin-bottom: 3rem;">
+        ${createStatsGrid([
+          {
+            label: 'Total Earnings',
+            value: chartUtils.formatCurrency(earnings.total_earnings_cents || 0),
+            icon: '💰',
+            trend: earnings.last_30_days_cents > 0 ? 15.3 : 0,
+            trendLabel: 'vs last month'
+          },
+          {
+            label: 'Last 30 Days',
+            value: chartUtils.formatCurrency(earnings.last_30_days_cents || 0),
+            icon: '📈'
+          },
+          {
+            label: 'Published Articles',
+            value: chartUtils.formatNumber(articles.filter(a => a.status === 'published').length),
+            icon: '📝'
+          },
+          {
+            label: 'Total Sales',
+            value: chartUtils.formatNumber(earnings.total_sales || 0),
+            icon: '🎯'
+          }
+        ])}
+
+        <!-- Charts -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: var(--space-6); margin-bottom: var(--space-6);">
           <div class="card">
-            <div style="color: var(--smoke); font-size: 0.875rem; margin-bottom: 0.5rem;">Total Earnings</div>
-            <div style="font-size: 2.5rem; font-weight: 800; background: var(--grad-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-              $${((earnings.total_earnings_cents || 0) / 100).toFixed(2)}
+            <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1.5rem;">
+              Earnings Over Time
+            </h3>
+            <div style="height: 300px;">
+              <canvas id="earnings-chart"></canvas>
             </div>
           </div>
-          
+
           <div class="card">
-            <div style="color: var(--smoke); font-size: 0.875rem; margin-bottom: 0.5rem;">Last 30 Days</div>
-            <div style="font-size: 2.5rem; font-weight: 800; color: var(--accent-tertiary);">
-              $${((earnings.last_30_days_cents || 0) / 100).toFixed(2)}
-            </div>
-          </div>
-          
-          <div class="card">
-            <div style="color: var(--smoke); font-size: 0.875rem; margin-bottom: 0.5rem;">Published Articles</div>
-            <div style="font-size: 2.5rem; font-weight: 800; color: var(--accent-secondary);">
-              ${articles.filter(a => a.status === 'published').length}
+            <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1.5rem;">
+              Top Articles by Revenue
+            </h3>
+            <div style="height: 300px;">
+              <canvas id="content-chart"></canvas>
             </div>
           </div>
         </div>
@@ -199,6 +226,11 @@ export async function renderAuthorDashboard() {
       });
     });
 
+    // Initialize charts
+    setTimeout(() => {
+      initializeAuthorCharts(earnings, articles);
+    }, 100);
+
   } catch (error) {
     console.error('Error loading dashboard:', error);
     content.innerHTML = `
@@ -245,6 +277,59 @@ function renderArticlesList(articles) {
       </div>
     </div>
   `).join('');
+}
+
+function initializeAuthorCharts(earnings, articles) {
+  // Destroy existing charts
+  if (earningsChart) destroyChart(earningsChart);
+  if (contentChart) destroyChart(contentChart);
+  
+  // Earnings over time chart (mock data - in production would come from API)
+  const earningsCanvas = document.getElementById('earnings-chart');
+  if (earningsCanvas) {
+    const days = [];
+    const earningsData = [];
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      days.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+      earningsData.push(Math.floor(Math.random() * 500) + 100);
+    }
+    
+    earningsChart = createLineChart(earningsCanvas, {
+      labels: days,
+      datasets: [{
+        label: 'Daily Earnings',
+        data: earningsData,
+        color: '#00d9ff',
+        fill: true
+      }]
+    }, {
+      formatValue: 'currency'
+    });
+  }
+  
+  // Top content chart
+  const contentCanvas = document.getElementById('content-chart');
+  if (contentCanvas && earnings.top_articles) {
+    const topArticles = earnings.top_articles.slice(0, 5);
+    
+    contentChart = createBarChart(contentCanvas, {
+      labels: topArticles.map(a => truncate(a.title, 25)),
+      datasets: [{
+        label: 'Revenue',
+        data: topArticles.map(a => a.earnings_cents || 0),
+        color: 'rgba(0, 217, 255, 0.7)'
+      }]
+    }, {
+      formatValue: 'currency'
+    });
+  }
+}
+
+function truncate(str, maxLen) {
+  if (str.length <= maxLen) return str;
+  return str.substring(0, maxLen) + '...';
 }
 
 function setupRegistrationForm() {

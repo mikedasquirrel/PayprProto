@@ -18,6 +18,20 @@ import { renderAbout } from './js/pages/about.js';
 import { renderPublications } from './js/pages/publications.js';
 import { renderPlatform } from './js/pages/platform.js';
 import { renderForWriters } from './js/pages/for-writers.js';
+import { renderPaymentSuccess } from './js/pages/payment-success.js';
+import { renderPaymentCancel } from './js/pages/payment-cancel.js';
+
+// Publisher pages
+import { renderPublisherConsole } from './js/pages/publisher-console.js';
+import { renderPublisherContent } from './js/pages/publisher-content.js';
+import { renderPublisherAuthors } from './js/pages/publisher-authors.js';
+import { renderPublisherSettings } from './js/pages/publisher-settings.js';
+
+// Admin pages
+import { renderAdminDashboard } from './js/pages/admin-dashboard.js';
+import { renderAdminTheme } from './js/pages/admin-theme.js';
+import { renderAdminSite } from './js/pages/admin-site.js';
+import { renderAdminUsers } from './js/pages/admin-users.js';
 
 // Initialize app
 async function init() {
@@ -48,6 +62,10 @@ async function init() {
   router.register('/history', renderHistory);
   router.register('/login', renderLogin);
   
+  // Payment pages
+  router.register('/payment-success', renderPaymentSuccess);
+  router.register('/payment-cancel', renderPaymentCancel);
+  
   // Showcase routes (demo)
   router.register('/showcase/smerconish', renderSmerconishShowcase);
   router.register('/showcase/smerconish/article/:id', renderSmerconishArticle);
@@ -55,6 +73,18 @@ async function init() {
   // Author routes
   router.register('/author/dashboard', renderAuthorDashboard);
   router.register('/author/submit', renderAuthorSubmit);
+  
+  // Publisher routes
+  router.register('/publisher/console', renderPublisherConsole);
+  router.register('/publisher/content', renderPublisherContent);
+  router.register('/publisher/authors', renderPublisherAuthors);
+  router.register('/publisher/settings', renderPublisherSettings);
+  
+  // Admin routes
+  router.register('/admin/dashboard', renderAdminDashboard);
+  router.register('/admin/theme', renderAdminTheme);
+  router.register('/admin/site', renderAdminSite);
+  router.register('/admin/users', renderAdminUsers);
 
   // Handle magic link verification
   router.register('/auth/verify', async (params) => {

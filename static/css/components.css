@@ -373,6 +373,33 @@
   border-width: 0;
 }
 
+/* Payment Tabs */
+.payment-tab {
+  flex: 1;
+  padding: var(--space-3) var(--space-4);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  color: var(--fog);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.payment-tab:hover {
+  background: var(--charcoal);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--paper);
+}
+
+.payment-tab.active {
+  background: var(--grad-primary);
+  border-color: transparent;
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   #toast-container {

@@ -645,6 +645,143 @@ def account_topup_stripe():
         return jsonify({"error": str(e)}), 400
 
 
+@bp.route("/account/topup/checkout", methods=["POST"])
+@csrf.exempt
+@limiter.limit("10/minute")
+@login_required
+def account_topup_checkout():
+    """Create Stripe Checkout session for wallet topup."""
+    import stripe
+    
+    payload = request.get_json(silent=True) or {}
+    data = TopupRequestSchema().load(payload)
+    
+    amount_cents = data["amount_cents"]
+    api_key = current_app.config.get("STRIPE_API_KEY")
+    
+    if not api_key:
+        return jsonify({"error": "Stripe not configured"}), 400
+    
+    # Minimum $1.00, maximum $500.00
+    if amount_cents < 100 or amount_cents > 50000:
+        return jsonify({"error": "Amount must be between $1.00 and $500.00"}), 400
+    
+    stripe.api_key = api_key
+    
+    # Get base URL for success/cancel redirects
+    base_url = request.host_url.rstrip('/')
+    
+    try:
+        session = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=[{
+                "price_data": {
+                    "currency": "usd",
+                    "product_data": {
+                        "name": "Paypr Wallet Top-up",
+                        "description": f"Add ${amount_cents/100:.2f} to your Paypr wallet",
+                    },
+                    "unit_amount": amount_cents,
+                },
+                "quantity": 1,
+            }],
+            mode="payment",
+            success_url=f"{base_url}/#/payment-success?session_id={{CHECKOUT_SESSION_ID}}&amount={amount_cents}",
+            cancel_url=f"{base_url}/#/payment-cancel",
+            client_reference_id=str(current_user.id),
+            metadata={
+                "user_id": current_user.id,
+                "user_email": current_user.email,
+                "amount_cents": amount_cents,
+                "type": "wallet_topup",
+            }
+        )
+        
+        return jsonify({
+            "ok": True,
+            "session_id": session.id,
+            "checkout_url": session.url,
+            "publishable_key": current_app.config.get("STRIPE_PUBLISHABLE_KEY"),
+        })
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@bp.route("/account/topup/verify-session", methods=["POST"])
+@csrf.exempt
+@login_required
+def account_topup_verify_session():
+    """Verify Stripe Checkout session and credit wallet."""
+    import stripe
+    
+    payload = request.get_json(silent=True) or {}
+    session_id = payload.get("session_id")
+    
+    if not session_id:
+        return jsonify({"error": "session_id required"}), 400
+    
+    api_key = current_app.config.get("STRIPE_API_KEY")
+    if not api_key:
+        return jsonify({"error": "Stripe not configured"}), 400
+    
+    stripe.api_key = api_key
+    
+    try:
+        session = stripe.checkout.Session.retrieve(session_id)
+        
+        # Verify session belongs to current user
+        if session.client_reference_id != str(current_user.id):
+            return jsonify({"error": "Session mismatch"}), 403
+        
+        # Check if payment succeeded
+        if session.payment_status != "paid":
+            return jsonify({"error": "Payment not completed", "status": session.payment_status}), 400
+        
+        # Check if we already credited this session (idempotency)
+        existing = Transaction.query.filter_by(
+            user_id=current_user.id,
+            type="topup"
+        ).filter(
+            Transaction.ip_address == session_id  # Using ip_address field to store session_id
+        ).first()
+        
+        if existing:
+            return jsonify({
+                "ok": True,
+                "already_credited": True,
+                "balance_cents": current_user.wallet_cents,
+            })
+        
+        # Credit the wallet
+        amount_cents = int(session.metadata.get("amount_cents", 0))
+        current_user.wallet_cents = (current_user.wallet_cents or 0) + amount_cents
+        
+        # Create transaction record
+        txn = Transaction(
+            user_id=current_user.id,
+            article_id=None,
+            publisher_id=None,
+            price_cents=amount_cents,
+            fee_cents=0,
+            net_cents=amount_cents,
+            type="topup",
+            ip_address=session_id,  # Store session_id for idempotency
+            user_agent=request.headers.get("User-Agent"),
+        )
+        db.session.add(txn)
+        db.session.commit()
+        
+        return jsonify({
+            "ok": True,
+            "balance_cents": current_user.wallet_cents,
+            "amount_credited": amount_cents,
+        })
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
 @bp.route("/account/transactions", methods=["GET"])
 @csrf.exempt
 @login_required
@@ -1214,6 +1351,145 @@ def admin_splits_update(publisher_id: int):
         "ok": True,
         "total_bps": total,
         "warning": "Total exceeds 100%" if total > 10000 else None
+    })
+
+
+@bp.route("/admin/users", methods=["GET"])
+@csrf.exempt
+def admin_users_list():
+    """Get list of users for admin management."""
+    if not session.get("is_admin"):
+        return jsonify({"error": "Admin authentication required"}), 401
+    
+    # Get pagination params
+    page = int(request.args.get("page", 1))
+    per_page = int(request.args.get("per_page", 50))
+    search = request.args.get("search", "").strip()
+    
+    # Build query
+    query = User.query
+    
+    if search:
+        query = query.filter(User.email.ilike(f"%{search}%"))
+    
+    # Get paginated users
+    users = query.order_by(User.created_at.desc()).limit(per_page).offset((page - 1) * per_page).all()
+    total = query.count()
+    
+    items = []
+    for user in users:
+        # Get transaction stats
+        txn_count = Transaction.query.filter_by(user_id=user.id, type="debit").count()
+        total_spent = db.session.query(
+            db.func.coalesce(db.func.sum(Transaction.price_cents), 0)
+        ).filter_by(user_id=user.id, type="debit").scalar() or 0
+        
+        items.append({
+            "id": user.id,
+            "email": user.email,
+            "wallet_cents": user.wallet_cents or 0,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "transaction_count": txn_count,
+            "total_spent_cents": total_spent,
+        })
+    
+    return jsonify({
+        "items": items,
+        "page": page,
+        "per_page": per_page,
+        "total": total,
+    })
+
+
+@bp.route("/admin/users/<int:user_id>", methods=["GET"])
+@csrf.exempt
+def admin_user_detail(user_id: int):
+    """Get detailed user information."""
+    if not session.get("is_admin"):
+        return jsonify({"error": "Admin authentication required"}), 401
+    
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    # Get recent transactions
+    recent_txns = Transaction.query.filter_by(user_id=user.id).order_by(
+        Transaction.created_at.desc()
+    ).limit(20).all()
+    
+    txn_items = []
+    for t in recent_txns:
+        txn_items.append({
+            "id": t.id,
+            "type": t.type,
+            "price_cents": t.price_cents,
+            "article_title": t.article.title if t.article else None,
+            "publisher_name": t.publisher.name if t.publisher else None,
+            "created_at": t.created_at.isoformat() if t.created_at else None,
+        })
+    
+    # Check if user is an author
+    from models import AuthorProfile
+    author_profile = AuthorProfile.query.filter_by(user_id=user.id).first()
+    
+    return jsonify({
+        "id": user.id,
+        "email": user.email,
+        "wallet_cents": user.wallet_cents or 0,
+        "created_at": user.created_at.isoformat() if user.created_at else None,
+        "is_author": author_profile is not None,
+        "author_id": author_profile.id if author_profile else None,
+        "recent_transactions": txn_items,
+    })
+
+
+@bp.route("/admin/users/<int:user_id>/credit", methods=["POST"])
+@csrf.exempt
+@limiter.limit("20/minute")
+def admin_credit_user(user_id: int):
+    """Manually credit user wallet (admin only)."""
+    if not session.get("is_admin"):
+        return jsonify({"error": "Admin authentication required"}), 401
+    
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    payload = request.get_json(silent=True) or {}
+    amount_cents = payload.get("amount_cents")
+    note = payload.get("note", "")
+    
+    if not amount_cents or not isinstance(amount_cents, int):
+        return jsonify({"error": "amount_cents required (integer)"}), 400
+    
+    # Allow both positive (credit) and negative (debit) amounts
+    if amount_cents == 0:
+        return jsonify({"error": "Amount cannot be zero"}), 400
+    
+    # Update wallet
+    user.wallet_cents = (user.wallet_cents or 0) + amount_cents
+    
+    # Create transaction record for audit trail
+    txn = Transaction(
+        user_id=user.id,
+        article_id=None,
+        publisher_id=None,
+        price_cents=abs(amount_cents),
+        fee_cents=0,
+        net_cents=amount_cents,
+        type="admin_credit" if amount_cents > 0 else "admin_debit",
+        ip_address=request.remote_addr,
+        user_agent=note[:300] if note else "Admin manual adjustment",  # Store note in user_agent field
+    )
+    db.session.add(txn)
+    db.session.commit()
+    
+    return jsonify({
+        "ok": True,
+        "user_id": user.id,
+        "new_balance_cents": user.wallet_cents,
+        "amount_adjusted": amount_cents,
+        "transaction_id": txn.id,
     })
 
 
