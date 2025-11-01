@@ -4,10 +4,11 @@ class Router {
     this.routes = new Map();
     this.currentRoute = null;
     this.params = {};
+    this.initialized = false;
     
     // Listen for hash changes
     window.addEventListener('hashchange', () => this.handleRoute());
-    window.addEventListener('load', () => this.handleRoute());
+    // Note: Don't auto-handle on load - let app.js control initial routing
   }
 
   // Register a route
@@ -22,6 +23,11 @@ class Router {
 
   // Handle route change
   async handleRoute() {
+    // Mark as initialized on first call
+    if (!this.initialized) {
+      this.initialized = true;
+    }
+    
     const hash = window.location.hash.slice(1) || '/';
     const [path, queryString] = hash.split('?');
     
