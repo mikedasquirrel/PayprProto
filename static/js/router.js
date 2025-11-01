@@ -53,6 +53,12 @@ class Router {
       }
     }
 
+    // Ensure navbar is visible unless on showcase routes
+    const navbar = document.getElementById('navbar');
+    if (navbar && !path.startsWith('/showcase/')) {
+      navbar.style.display = 'block';
+    }
+
     // Execute handler or show 404
     if (handler) {
       this.currentRoute = path;
@@ -92,6 +98,12 @@ class Router {
 
   // Show 404 page
   show404() {
+    // Ensure navbar is visible
+    const navbar = document.getElementById('navbar');
+    if (navbar) {
+      navbar.style.display = 'block';
+    }
+    
     const content = document.getElementById('content');
     content.innerHTML = `
       <div class="container" style="text-align: center; padding: 4rem 1.5rem;">
