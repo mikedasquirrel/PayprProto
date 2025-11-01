@@ -1,6 +1,7 @@
 // Newsstand Page - Main landing page
 import api from '../api.js';
 import { showToast } from '../components/toast.js';
+import tours from '../components/tours.js';
 
 export async function renderNewsstand() {
   const content = document.getElementById('content');
@@ -74,6 +75,13 @@ export async function renderNewsstand() {
     setupFilters(categories);
     setupSearch();
     setupLoadMore(publishers.length);
+    
+    // Auto-start reader tour for first-time visitors
+    setTimeout(() => {
+      if (!tours.hasTourCompleted('reader')) {
+        tours.startReaderTour();
+      }
+    }, 1000);
     
   } catch (error) {
     console.error('Error loading newsstand:', error);

@@ -5,6 +5,42 @@ import { showToast } from '../components/toast.js';
 export async function renderPublisherSettings() {
   const content = document.getElementById('content');
   
+  // Show loading state
+  content.innerHTML = `
+    <div class="container">
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading settings...</p>
+      </div>
+    </div>
+  `;
+  
+  try {
+    // Fetch current settings
+    const settings = await api.get('/publisher/settings');
+    renderSettingsForm(settings);
+  } catch (error) {
+    console.error('Settings load error:', error);
+    content.innerHTML = `
+      <div class="container">
+        <div class="empty-state">
+          <div class="empty-icon">⚠️</div>
+          <h2 class="empty-message">Error Loading Settings</h2>
+          <p style="color: var(--smoke); margin-bottom: 2rem;">
+            ${error.message || 'Unable to load settings'}
+          </p>
+          <button class="btn btn-primary" onclick="window.location.hash='#/publisher/console'">
+            Back to Console
+          </button>
+        </div>
+      </div>
+    `;
+  }
+}
+
+function renderSettingsForm(settings) {
+  const content = document.getElementById('content');
+  
   content.innerHTML = `
     <div class="container">
       <div style="max-width: 800px; margin: 0 auto;">
@@ -32,6 +68,7 @@ export async function renderPublisherSettings() {
                 id="pub-name"
                 class="input" 
                 placeholder="Your Publication"
+                value="${escapeHtml(settings.name || '')}"
                 style="
                   width: 100%;
                   padding: 0.75rem 1rem;
@@ -56,6 +93,7 @@ export async function renderPublisherSettings() {
                   class="input" 
                   placeholder="0.99"
                   step="0.01"
+                  value="${((settings.default_price_cents || 0) / 100).toFixed(2)}"
                   style="
                     width: 100%;
                     padding: 0.75rem 1rem 0.75rem 2rem;
@@ -77,7 +115,7 @@ export async function renderPublisherSettings() {
                 <input 
                   type="checkbox" 
                   id="accept-submissions"
-                  checked
+                  ${settings.accepts_submissions ? 'checked' : ''}
                   style="
                     width: 1.25rem;
                     height: 1.25rem;
@@ -100,11 +138,11 @@ export async function renderPublisherSettings() {
                   id="author-split"
                   min="0"
                   max="90"
-                  value="60"
+                  value="${(settings.default_author_split_bps || 6000) / 100}"
                   style="flex: 1;"
                 >
                 <span id="split-value" style="font-weight: 700; color: var(--primary); min-width: 4rem; text-align: right;">
-                  60%
+                  ${(settings.default_author_split_bps || 6000) / 100}%
                 </span>
               </div>
               <p style="color: var(--smoke); font-size: 0.875rem; margin-top: 0.5rem;">
@@ -129,6 +167,7 @@ export async function renderPublisherSettings() {
                 id="logo-url"
                 class="input" 
                 placeholder="https://example.com/logo.png"
+                value="${escapeHtml(settings.logo_url || '')}"
                 style="
                   width: 100%;
                   padding: 0.75rem 1rem;
@@ -148,7 +187,7 @@ export async function renderPublisherSettings() {
               <input 
                 type="color" 
                 id="accent-color"
-                value="#00d9ff"
+                value="${settings.accent_color || '#00d9ff'}"
                 style="
                   width: 100%;
                   height: 3rem;
@@ -185,10 +224,37 @@ export async function renderPublisherSettings() {
     });
   }
   
-  window.saveSettings = () => {
-    showToast('Settings saved successfully!', 'success');
-    setTimeout(() => window.location.hash = '#/publisher/console', 1000);
+  window.saveSettings = async () => {
+    try {
+      const name = document.getElementById('pub-name').value;
+      const defaultPrice = parseFloat(document.getElementById('default-price').value);
+      const acceptSubmissions = document.getElementById('accept-submissions').checked;
+      const authorSplit = parseInt(document.getElementById('author-split').value);
+      const logoUrl = document.getElementById('logo-url').value;
+      const accentColor = document.getElementById('accent-color').value;
+      
+      await api.put('/publisher/settings', {
+        name,
+        default_price_cents: Math.round(defaultPrice * 100),
+        accepts_submissions: acceptSubmissions,
+        default_author_split_bps: authorSplit * 100,
+        logo_url: logoUrl,
+        accent_color: accentColor
+      });
+      
+      showToast('Settings saved successfully!', 'success');
+      setTimeout(() => window.location.hash = '#/publisher/console', 1000);
+    } catch (error) {
+      console.error('Save error:', error);
+      showToast(error.message || 'Failed to save settings', 'error');
+    }
   };
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 export default renderPublisherSettings;

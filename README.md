@@ -49,9 +49,12 @@ http://127.0.0.1:51879
 - **📊 Transaction History** - Full audit trail with revenue splits
 
 ### Publisher Features
-- **📈 Analytics Console** - All-time and 7-day revenue stats
+- **📈 Analytics Console** - All-time and 7-day revenue stats with interactive charts
 - **💵 Revenue Splits** - Configurable split rules by role (author, editor, etc.)
 - **📥 CSV Export** - Download transaction data
+- **👥 Author Management** - View and manage author relationships
+- **📝 Content Curation** - Browse and add independent author submissions
+- **⚙️ Publisher Settings** - Customize branding, pricing, and author split defaults
 
 ### Admin Features
 - **🎨 Theme Customization** - Live theme editor with colors, fonts, gradients
@@ -63,6 +66,8 @@ http://127.0.0.1:51879
 - **♿ Accessibility** - Keyboard navigation, ARIA labels, focus states
 - **📱 Responsive** - Mobile-first design, touch-friendly interactions
 - **🎯 API-First** - Comprehensive REST APIs for all operations
+- **🎓 Interactive Tours** - Guided onboarding for readers, authors, and publishers (Shepherd.js)
+- **🎨 Showcase Sites** - Branded microsites with custom themes for creators
 
 ## 🏗️ Architecture
 
@@ -97,6 +102,16 @@ http://127.0.0.1:51879
 
 ## 📖 Usage
 
+### 🎓 Interactive Guided Tours
+
+Paypr includes interactive onboarding tours to help you explore the platform:
+
+- **Reader Tour** - Learn how to browse, unlock articles, and manage your wallet
+- **Author Tour** - Discover how to publish content and track your earnings  
+- **Publisher Tour** - Explore content curation and author management
+
+Access tours from the "🎓 Tours" dropdown in the navbar. Tours auto-start for first-time visitors and track completion in localStorage.
+
 ### Demo Flow
 
 1. **Browse Publishers** - Visit the newsstand at `/`
@@ -107,6 +122,26 @@ http://127.0.0.1:51879
 5. **Unlock Content** - Click "Unlock Article" to pay and access full content
 6. **Refund Window** - You have 10 minutes to request a refund
 7. **View History** - Check transaction history and wallet balance
+
+### 🎯 Showcase Demonstrations
+
+Explore two complete showcase sites demonstrating different revenue models:
+
+#### Smerconish.com (Multi-Source Model)
+- **URL:** `http://127.0.0.1:51879/#/showcase/smerconish`
+- **Model:** Content from multiple publishers with custom splits
+- **Examples:**
+  - CNN articles (45% author / 45% publisher / 10% platform)
+  - SiriusXM podcasts (50% / 40% / 10% split)
+  - Independent content (90% / 10% split)
+- Demonstrates how a creator can aggregate content from various distribution partners
+
+#### TechPulse Newsletter (Independent Model)
+- **URL:** `http://127.0.0.1:51879/#/showcase/technewsletter`  
+- **Model:** 100% independent creator, no publisher intermediary
+- **Split:** 90% to author, 10% to platform
+- Demonstrates the indie creator model with full creative control
+- Modern tech-focused design showcasing the platform's flexibility
 
 ### Admin Access
 

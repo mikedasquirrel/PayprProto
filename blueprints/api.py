@@ -912,97 +912,73 @@ def publisher_console_stats():
     pub_user = auth_result
     publisher_id = session.get("publisher_id") if not session.get("is_admin") else None
     
-    # All-time stats
-    if session.get("is_admin"):
-        summaries = (
-            db.session.query(
-                Publisher.id,
-                Publisher.name,
-                Publisher.slug,
-                func.count(Transaction.id),
-                func.sum(Transaction.price_cents),
-                func.sum(Transaction.fee_cents),
-                func.sum(Transaction.net_cents),
-            )
-            .join(Transaction, Transaction.publisher_id == Publisher.id)
-            .group_by(Publisher.id)
-            .all()
-        )
-    else:
-        summaries = (
-            db.session.query(
-                Publisher.id,
-                Publisher.name,
-                Publisher.slug,
-                func.count(Transaction.id),
-                func.sum(Transaction.price_cents),
-                func.sum(Transaction.fee_cents),
-                func.sum(Transaction.net_cents),
-            )
-            .join(Transaction, Transaction.publisher_id == Publisher.id)
-            .filter(Publisher.id == publisher_id)
-            .group_by(Publisher.id)
-            .all()
-        )
+    # For demo purposes, return simplified stats for a single publisher
+    # In production, this would handle multiple publishers for admin users
     
-    # 7-day stats
-    since = datetime.utcnow() - timedelta(days=7)
-    if session.get("is_admin"):
-        summaries_7d = (
+    if publisher_id:
+        # Get all-time stats
+        all_time_stats = (
             db.session.query(
-                Publisher.id,
-                func.count(Transaction.id),
-                func.sum(Transaction.price_cents),
-                func.sum(Transaction.fee_cents),
-                func.sum(Transaction.net_cents),
+                func.count(Transaction.id).label('total_unlocks'),
+                func.sum(Transaction.price_cents).label('total_revenue')
             )
-            .join(Transaction, Transaction.publisher_id == Publisher.id)
-            .filter(Transaction.created_at >= since)
-            .group_by(Publisher.id)
-            .all()
+            .filter(Transaction.publisher_id == publisher_id)
+            .first()
         )
-    else:
-        summaries_7d = (
-            db.session.query(
-                Publisher.id,
-                func.count(Transaction.id),
-                func.sum(Transaction.price_cents),
-                func.sum(Transaction.fee_cents),
-                func.sum(Transaction.net_cents),
-            )
-            .join(Transaction, Transaction.publisher_id == Publisher.id)
-            .filter(Transaction.created_at >= since, Publisher.id == publisher_id)
-            .group_by(Publisher.id)
-            .all()
-        )
-    
-    # Build response
-    stats_7d_map = {row[0]: row[1:] for row in summaries_7d}
-    
-    items = []
-    for row in summaries:
-        pub_id = row[0]
-        seven_day = stats_7d_map.get(pub_id, (0, 0, 0, 0))
         
-        items.append({
-            "publisher_id": pub_id,
-            "publisher_name": row[1],
-            "publisher_slug": row[2],
-            "all_time": {
-                "reads": row[3] or 0,
-                "gross_cents": row[4] or 0,
-                "fee_cents": row[5] or 0,
-                "net_cents": row[6] or 0,
-            },
-            "last_7_days": {
-                "reads": seven_day[0] or 0,
-                "gross_cents": seven_day[1] or 0,
-                "fee_cents": seven_day[2] or 0,
-                "net_cents": seven_day[3] or 0,
-            }
+        # Get 7-day stats
+        since_7d = datetime.utcnow() - timedelta(days=7)
+        seven_day_stats = (
+            db.session.query(
+                func.count(Transaction.id).label('unlocks_7d'),
+                func.sum(Transaction.price_cents).label('revenue_7d')
+            )
+            .filter(
+                Transaction.publisher_id == publisher_id,
+                Transaction.created_at >= since_7d
+            )
+            .first()
+        )
+        
+        # Get total articles count
+        total_articles = Article.query.filter_by(publisher_id=publisher_id).count()
+        
+        return jsonify({
+            "all_time_revenue_cents": all_time_stats.total_revenue or 0,
+            "seven_day_revenue_cents": seven_day_stats.revenue_7d or 0,
+            "total_unlocks": all_time_stats.total_unlocks or 0,
+            "seven_day_unlocks": seven_day_stats.unlocks_7d or 0,
+            "total_articles": total_articles
         })
-    
-    return jsonify({"stats": items})
+    else:
+        # Admin view - return aggregate stats
+        all_time_stats = (
+            db.session.query(
+                func.count(Transaction.id).label('total_unlocks'),
+                func.sum(Transaction.price_cents).label('total_revenue')
+            )
+            .first()
+        )
+        
+        since_7d = datetime.utcnow() - timedelta(days=7)
+        seven_day_stats = (
+            db.session.query(
+                func.count(Transaction.id).label('unlocks_7d'),
+                func.sum(Transaction.price_cents).label('revenue_7d')
+            )
+            .filter(Transaction.created_at >= since_7d)
+            .first()
+        )
+        
+        total_articles = Article.query.count()
+        
+        return jsonify({
+            "all_time_revenue_cents": all_time_stats.total_revenue or 0,
+            "seven_day_revenue_cents": seven_day_stats.revenue_7d or 0,
+            "total_unlocks": all_time_stats.total_unlocks or 0,
+            "seven_day_unlocks": seven_day_stats.unlocks_7d or 0,
+            "total_articles": total_articles
+        })
 
 
 @bp.route("/publisher/console/transactions", methods=["GET"])
@@ -1083,11 +1059,9 @@ def publisher_console_articles():
     if publisher_id:
         query = (
             db.session.query(
-                Article.id,
-                Article.title,
-                Article.slug,
-                func.count(Transaction.id),
-                func.sum(Transaction.price_cents),
+                Article,
+                func.count(Transaction.id).label('unlock_count'),
+                func.sum(Transaction.price_cents).label('total_revenue')
             )
             .outerjoin(Transaction, Transaction.article_id == Article.id)
             .filter(Article.publisher_id == publisher_id)
@@ -1097,11 +1071,9 @@ def publisher_console_articles():
     else:
         query = (
             db.session.query(
-                Article.id,
-                Article.title,
-                Article.slug,
-                func.count(Transaction.id),
-                func.sum(Transaction.price_cents),
+                Article,
+                func.count(Transaction.id).label('unlock_count'),
+                func.sum(Transaction.price_cents).label('total_revenue')
             )
             .outerjoin(Transaction, Transaction.article_id == Article.id)
             .group_by(Article.id)
@@ -1111,16 +1083,19 @@ def publisher_console_articles():
     rows = query.limit(50).all()
     
     items = []
-    for r in rows:
+    for article, unlock_count, total_revenue in rows:
         items.append({
-            "article_id": r[0],
-            "title": r[1],
-            "slug": r[2],
-            "reads": r[3] or 0,
-            "revenue_cents": r[4] or 0,
+            "id": article.id,
+            "title": article.title,
+            "slug": article.slug,
+            "author": article.author,
+            "unlock_count": unlock_count or 0,
+            "total_revenue_cents": total_revenue or 0,
+            "price_cents": article.price_cents or 0,
+            "status": article.status or 'published',
         })
     
-    return jsonify({"articles": items})
+    return jsonify({"items": items})
 
 
 # ========== ADMIN APIs ==========
@@ -2062,12 +2037,17 @@ def publisher_authors():
     
     publisher_id = session.get("publisher_id")
     
+    # Get publisher default split for calculating percentage
+    publisher = Publisher.query.get(publisher_id) if publisher_id else None
+    default_split_pct = (publisher.default_author_split_bps or 6000) / 100 if publisher else 60
+    
     # Get distinct authors who have content with this publisher
     from models import AuthorProfile, ContentLicense
     
     authors_query = db.session.query(
         AuthorProfile.id,
         AuthorProfile.display_name,
+        AuthorProfile.bio,
         AuthorProfile.photo_url,
         func.count(Article.id).label("article_count"),
         func.sum(Transaction.price_cents).label("total_revenue")
@@ -2079,17 +2059,19 @@ def publisher_authors():
         Article.publisher_id == publisher_id
     ).group_by(AuthorProfile.id).all()
     
-    authors = []
+    items = []
     for row in authors_query:
-        authors.append({
-            "author_id": row[0],
+        items.append({
+            "id": row[0],
             "display_name": row[1],
-            "photo_url": row[2],
-            "article_count": row[3] or 0,
-            "total_revenue_cents": row[4] or 0
+            "bio": row[2],
+            "photo_url": row[3],
+            "article_count": row[4] or 0,
+            "total_earnings_cents": row[5] or 0,
+            "split_percent": default_split_pct  # Could be customized per author in future
         })
     
-    return jsonify({"authors": authors})
+    return jsonify({"items": items})
 
 
 @bp.route("/publisher/invite-author", methods=["POST"])
@@ -2114,3 +2096,70 @@ def publisher_invite_author():
         "message": f"Invitation sent to {email}",
         "demo_note": "Email invitations not yet implemented in demo"
     })
+
+
+@bp.route("/publisher/settings", methods=["GET"])
+@csrf.exempt
+def publisher_get_settings():
+    """Get publisher settings."""
+    auth_result = _require_publisher_auth()
+    if isinstance(auth_result, tuple):
+        return auth_result
+    
+    publisher_id = session.get("publisher_id")
+    if not publisher_id:
+        return jsonify({"error": "Publisher ID required"}), 400
+    
+    publisher = Publisher.query.get(publisher_id)
+    if not publisher:
+        return jsonify({"error": "Publisher not found"}), 404
+    
+    return jsonify({
+        "name": publisher.name,
+        "slug": publisher.slug,
+        "logo_url": publisher.logo_url,
+        "hero_url": publisher.hero_url,
+        "accent_color": publisher.accent_color,
+        "default_price_cents": publisher.default_price_cents,
+        "accepts_submissions": publisher.accepts_submissions,
+        "default_author_split_bps": publisher.default_author_split_bps
+    })
+
+
+@bp.route("/publisher/settings", methods=["PUT"])
+@csrf.exempt
+def publisher_update_settings():
+    """Update publisher settings."""
+    auth_result = _require_publisher_auth()
+    if isinstance(auth_result, tuple):
+        return auth_result
+    
+    publisher_id = session.get("publisher_id")
+    if not publisher_id:
+        return jsonify({"error": "Publisher ID required"}), 400
+    
+    publisher = Publisher.query.get(publisher_id)
+    if not publisher:
+        return jsonify({"error": "Publisher not found"}), 404
+    
+    payload = request.get_json(silent=True) or {}
+    
+    # Update allowed fields
+    if "name" in payload:
+        publisher.name = payload["name"]
+    if "logo_url" in payload:
+        publisher.logo_url = payload["logo_url"]
+    if "hero_url" in payload:
+        publisher.hero_url = payload["hero_url"]
+    if "accent_color" in payload:
+        publisher.accent_color = payload["accent_color"]
+    if "default_price_cents" in payload:
+        publisher.default_price_cents = int(payload["default_price_cents"])
+    if "accepts_submissions" in payload:
+        publisher.accepts_submissions = bool(payload["accepts_submissions"])
+    if "default_author_split_bps" in payload:
+        publisher.default_author_split_bps = int(payload["default_author_split_bps"])
+    
+    db.session.commit()
+    
+    return jsonify({"ok": True, "message": "Settings updated successfully"})

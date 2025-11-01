@@ -12,6 +12,7 @@ import { renderWallet } from './js/pages/wallet.js';
 import { renderHistory } from './js/pages/history.js';
 import { renderLogin } from './js/pages/login.js';
 import { renderSmerconishShowcase, renderSmerconishArticle } from './js/pages/showcase-smerconish.js';
+import { renderTechNewsletterShowcase, renderTechNewsletterArticle } from './js/pages/showcase-technewsletter.js';
 import { renderAuthorDashboard } from './js/pages/author-dashboard.js';
 import { renderAuthorSubmit } from './js/pages/author-submit.js';
 import { renderAbout } from './js/pages/about.js';
@@ -69,6 +70,8 @@ async function init() {
   // Showcase routes (demo)
   router.register('/showcase/smerconish', renderSmerconishShowcase);
   router.register('/showcase/smerconish/article/:id', renderSmerconishArticle);
+  router.register('/showcase/technewsletter', renderTechNewsletterShowcase);
+  router.register('/showcase/technewsletter/article/:id', renderTechNewsletterArticle);
   
   // Author routes
   router.register('/author/dashboard', renderAuthorDashboard);
