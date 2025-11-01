@@ -38,14 +38,7 @@ import { renderAdminUsers } from './js/pages/admin-users.js';
 async function init() {
   console.log('🚀 Paypr SPA initializing...');
 
-  // Initialize navbar
-  initNavbar();
-
-  // Check authentication status
-  await auth.checkAuth();
-
-  // Register routes
-  
+  // Register routes FIRST before any async operations
   // Platform pages
   router.register('/about', renderAbout);
   router.register('/publications', renderPublications);
@@ -104,14 +97,24 @@ async function init() {
     }
   });
 
-  // Initial route handling
-  router.handleRoute();
+  // Initialize navbar
+  initNavbar();
+
+  // Check authentication status
+  await auth.checkAuth();
+
+  // Initial route handling - NOW routes are definitely registered
+  await router.handleRoute();
 
   console.log('✅ Paypr SPA ready!');
 }
 
-// Start the app
-init();
+// Start the app when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
 
 // Make auth and router globally accessible for debugging
 window.paypr = {
