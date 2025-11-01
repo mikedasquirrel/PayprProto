@@ -14,14 +14,16 @@
 }
 
 .btn-primary {
-  background: var(--grad-primary);
-  color: var(--ink);
+  background: var(--accent-primary);
+  color: white;
   box-shadow: var(--shadow);
+  border: none;
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg), var(--shadow-glow);
+  background: #C71820;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-secondary {
@@ -63,9 +65,9 @@
 }
 
 .card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(255, 255, 255, 0.12);
-  box-shadow: var(--shadow-xl);
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-lg);
 }
 
 .card-clickable {
@@ -345,10 +347,7 @@
 
 /* Utility Classes */
 .text-gradient {
-  background: var(--grad-primary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--accent-secondary);
 }
 
 .glass {
@@ -394,10 +393,10 @@
 }
 
 .payment-tab.active {
-  background: var(--grad-primary);
-  border-color: transparent;
-  color: var(--ink);
-  box-shadow: var(--shadow);
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+  box-shadow: var(--shadow-sm);
 }
 
 /* Responsive */

@@ -23,10 +23,7 @@
 .navbar-brand {
   font-size: var(--text-2xl);
   font-weight: 800;
-  background: var(--grad-primary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: white;
   letter-spacing: -0.5px;
 }
 
@@ -48,7 +45,7 @@
 }
 
 .navbar-link.active {
-  color: var(--accent-secondary);
+  color: var(--accent-primary);
 }
 
 .wallet-badge {
@@ -79,10 +76,10 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(
-    1200px 800px at 50% -10%,
-    rgba(250, 61, 127, 0.08),
-    transparent 60%
+  background: linear-gradient(
+    180deg,
+    rgba(0, 44, 95, 0.03) 0%,
+    transparent 50%
   );
   pointer-events: none;
 }
@@ -139,9 +136,9 @@
 }
 
 .filter-chip.active {
-  background: var(--accent-secondary);
-  color: var(--ink);
-  border-color: var(--accent-secondary);
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
 }
 
 .search-box {
@@ -325,10 +322,7 @@
 .paywall-price {
   font-size: var(--text-3xl);
   font-weight: 800;
-  background: var(--grad-primary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--accent-secondary);
   margin-bottom: var(--space-6);
 }
 
@@ -360,10 +354,7 @@
 .balance-amount {
   font-size: var(--text-5xl);
   font-weight: 800;
-  background: var(--grad-primary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--accent-secondary);
   margin-bottom: var(--space-4);
 }
 
@@ -633,14 +624,14 @@
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: var(--grad-primary);
+  background: var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: var(--text-2xl);
   font-weight: 800;
   margin: 0 auto var(--space-4);
-  color: var(--ink);
+  color: white;
 }
 
 .step-title {
@@ -799,10 +790,7 @@
 .stat-number {
   font-size: 3rem;
   font-weight: 800;
-  background: var(--grad-primary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--accent-secondary);
   margin-bottom: var(--space-2);
 }
 
@@ -1210,12 +1198,12 @@
   height: 40px;
   flex-shrink: 0;
   border-radius: 50%;
-  background: var(--grad-primary);
+  background: var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  color: var(--ink);
+  color: white;
 }
 
 .gs-step-content {
@@ -1296,10 +1284,7 @@
 .licensing-price {
   font-size: var(--text-3xl);
   font-weight: 800;
-  background: var(--grad-primary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--accent-secondary);
   margin-bottom: var(--space-4);
 }
 
