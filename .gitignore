@@ -45,3 +45,6 @@ aid.txt
 # Migrations (optional - you may want to track these)
 # migrations/versions/*.py
 
+
+# SQLite journals
+*.db-journal

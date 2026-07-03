@@ -1,7 +1,7 @@
 import os
 import logging
 import uuid
-from flask import Flask, g, render_template, jsonify, request
+from flask import Flask, Response, g, render_template, jsonify, request
 from marshmallow import ValidationError
 from dotenv import load_dotenv
 
@@ -87,11 +87,14 @@ def create_app() -> Flask:
     from blueprints.api import bp as api_bp
     from blueprints.external import bp as external_bp
     from blueprints.showcase import bp as showcase_bp
+    from blueprints.developer import bp as developer_bp
 
     # app.register_blueprint(public_bp)  # Disabled - using SPA
     # app.register_blueprint(account_bp)  # Disabled - using API
     # app.register_blueprint(publisher_bp)  # Disabled - using API
     app.register_blueprint(api_bp, url_prefix="/api")
+    # The generalized machine-facing developer platform (keys, pieces, metered charges).
+    app.register_blueprint(developer_bp, url_prefix="/api/v1")
     app.register_blueprint(external_bp)
     app.register_blueprint(showcase_bp)
 
@@ -109,6 +112,23 @@ def create_app() -> Flask:
     @app.route("/healthz")
     def healthz():
         return jsonify({"ok": True}), 200
+
+    @app.route("/robots.txt")
+    def robots_txt():
+        base = (app.config.get("PUBLIC_BASE_URL") or request.host_url).rstrip("/")
+        body = f"User-agent: *\nAllow: /\nSitemap: {base}/sitemap.xml\n"
+        return Response(body, mimetype="text/plain")
+
+    @app.route("/sitemap.xml")
+    def sitemap_xml():
+        base = (app.config.get("PUBLIC_BASE_URL") or request.host_url).rstrip("/")
+        paths = ["/", "/#/publishers", "/#/publications", "/#/platform",
+                 "/#/about", "/#/for-writers", "/#/developers"]
+        urls = "".join(f"<url><loc>{base}{p}</loc></url>" for p in paths)
+        xml = ('<?xml version="1.0" encoding="UTF-8"?>'
+               '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+               f"{urls}</urlset>")
+        return Response(xml, mimetype="application/xml")
 
     # Serve SPA for all non-API routes
     @app.route("/", defaults={"path": ""})
@@ -170,7 +190,9 @@ def create_app() -> Flask:
             User, Publisher, Article, Transaction, Event, AdminAccount,
             AuthorProfile, ContentLicense, ShowcaseSite, AuthorEarnings,
             ThemeSettings, SiteSettings, SplitRule, RevokedToken,
-            ContactMessage, MagicLogin, PublisherUser
+            ContactMessage, MagicLogin, PublisherUser,
+            LedgerEntry, IdempotentOp,
+            DeveloperApp, ApiKey, AppReaderGrant
         )
         db.create_all()
         # Dev-friendly: ensure new columns exist in SQLite without migrations

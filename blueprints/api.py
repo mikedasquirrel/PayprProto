@@ -15,9 +15,13 @@ from extensions import db, csrf, limiter
 from models import (
     Article, Transaction, Publisher, User, ContactMessage, 
     MagicLogin, PublisherUser, AdminAccount, ThemeSettings, 
-    SiteSettings, SplitRule, Event
+    SiteSettings, SplitRule, Event, LedgerEntry, IdempotentOp
 )
-from services.payments import calculate_fees_cents, apply_split_rules
+from services.payments import calculate_fees_cents, apply_split_rules, split_purchase
+from services.ledger import (
+    user_acct, payee_acct, add_entry, atomic_debit_user, credit_user,
+    txn_ref, already_refunded, active_unlock, topup_wallet,
+)
 from services.tokens import issue_jwt, verify_jwt, revoke_token
 from services.schemas import (
     PayRequestSchema, VerifyRequestSchema, RefundRequestSchema, 
@@ -29,6 +33,29 @@ from services.events import track_event
 
 
 bp = Blueprint("api", __name__)
+
+
+# CSRF defense for the money endpoints: reject cross-origin POSTs. Combined with
+# SameSite cookies (Lax in dev, Strict in prod) this blocks requests forged from
+# other sites without the SPA needing to carry CSRF tokens. Server-to-server
+# calls (no Origin header) and same-origin requests pass through.
+_ORIGIN_GUARDED = {
+    "api.pay", "api.refund", "api.account_topup", "api.account_topup_stripe",
+    "api.account_topup_checkout", "api.account_topup_verify_session", "api.admin_credit_user",
+}
+
+
+@bp.before_request
+def _origin_guard():
+    if request.method == "POST" and request.endpoint in _ORIGIN_GUARDED:
+        origin = request.headers.get("Origin")
+        if origin:
+            from urllib.parse import urlparse
+            o = urlparse(origin).netloc
+            if o and o != urlparse(request.host_url).netloc:
+                return jsonify({"error": "Bad origin"}), 403
+
+
 @bp.route("/publishers", methods=["GET"])  # simple pagination/filters for newsstand
 @csrf.exempt
 def list_publishers():
@@ -80,67 +107,89 @@ def pay():
 
     price = article.price_cents or (article.publisher.default_price_cents if article.publisher else 25)
 
-    # Daily cap enforcement
+    def _grant_and_respond(txn_id, split_amounts, balance_cents):
+        token = issue_jwt(current_user.id, article.id, article.publisher_id, exp_minutes=10)
+        unlocked = set(session.get("unlocked_articles", []))
+        unlocked.add(str(article.id))
+        session["unlocked_articles"] = list(unlocked)
+        return jsonify({
+            "access_token": token,
+            "balance_cents": balance_cents,
+            "price_cents": price,
+            "transaction_id": txn_id,
+            "split": split_amounts,
+        })
+
+    # Idempotent: a user who already owns this article (paid, not refunded) is
+    # re-granted access without being charged again. Closes double-click / retry
+    # double-charge.
+    owned = active_unlock(current_user.id, article.id)
+    if owned:
+        try:
+            owned_split = json.loads(owned.split_breakdown_json) if owned.split_breakdown_json else {}
+        except Exception:
+            owned_split = {}
+        return _grant_and_respond(owned.id, owned_split, current_user.wallet_cents or 0)
+
+    # Daily cap, net of refunds in the last 24h.
     cap = int(current_app.config.get("DAILY_SPEND_CAP_CENTS", 1500))
     since = datetime.utcnow() - timedelta(days=1)
-    spent = (
-        db.session.query(db.func.coalesce(db.func.sum(Transaction.price_cents), 0))
-        .filter(Transaction.user_id == current_user.id, Transaction.created_at >= since, Transaction.type == "debit")
-        .scalar()
-    )
-    if spent + price > cap:
+    debited = db.session.query(db.func.coalesce(db.func.sum(Transaction.price_cents), 0)).filter(
+        Transaction.user_id == current_user.id, Transaction.created_at >= since, Transaction.type == "debit"
+    ).scalar() or 0
+    refunded = db.session.query(db.func.coalesce(db.func.sum(Transaction.price_cents), 0)).filter(
+        Transaction.user_id == current_user.id, Transaction.created_at >= since, Transaction.type == "refund"
+    ).scalar() or 0
+    if (debited - refunded) + price > cap:
         return jsonify({"error": "Daily spend cap reached"}), 429
 
-    if (current_user.wallet_cents or 0) < price:
+    # Atomic, race-safe debit: the balance can never go negative and two
+    # concurrent purchases can never both spend the same funds. Not committed
+    # yet — the whole purchase commits as one unit below.
+    if not atomic_debit_user(current_user.id, price):
         return jsonify({"error": "Insufficient balance"}), 402
 
-    # Calculate revenue split using new flexible logic
-    from services.payments import calculate_article_split, record_author_earnings
-    split_amounts = calculate_article_split(price, article)
-    
-    # Legacy fee/net calculation for backward compatibility
-    fee, net = calculate_fees_cents(price)
-
-    import json
-    txn = Transaction(
-        user_id=current_user.id,
-        article_id=article.id,
-        publisher_id=article.publisher_id,
-        price_cents=price,
-        fee_cents=fee,
-        net_cents=net,
-        type="debit",
-        ip_address=request.remote_addr,
-        user_agent=request.headers.get("User-Agent"),
-        split_breakdown_json=json.dumps(split_amounts),
-    )
-    current_user.wallet_cents = (current_user.wallet_cents or 0) - price
-    db.session.add(txn)
-    db.session.commit()
-
-    # Record author earnings if applicable
+    split_amounts = split_purchase(price, article)
+    fee = split_amounts.get("platform", 0)
+    net = price - fee
     try:
-        record_author_earnings(article, txn, split_amounts)
-    except Exception as e:
-        # Don't fail transaction if earnings recording fails
-        print(f"Failed to record author earnings: {e}")
+        txn = Transaction(
+            user_id=current_user.id,
+            article_id=article.id,
+            publisher_id=article.publisher_id,
+            price_cents=price,
+            fee_cents=fee,
+            net_cents=net,
+            type="debit",
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get("User-Agent"),
+            split_breakdown_json=json.dumps(split_amounts),
+        )
+        db.session.add(txn)
+        db.session.flush()  # assign txn.id
+        ref = txn_ref(txn.id)
+        add_entry(user_acct(current_user.id), -price, "purchase", ref)
+        for role, cents in split_amounts.items():
+            if cents:
+                add_entry(payee_acct(role, article), int(cents), "split_credit", ref)
+        if article.author_id and split_amounts.get("author", 0) > 0:
+            from models import AuthorEarnings
+            db.session.add(AuthorEarnings(
+                author_id=article.author_id,
+                article_id=article.id,
+                transaction_id=txn.id,
+                amount_cents=split_amounts["author"],
+                percentage=(split_amounts["author"] * 10000) // price if price > 0 else 0,
+                publisher_id=article.publisher_id,
+            ))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()  # reverts the uncommitted debit too
+        return jsonify({"error": "Payment could not be completed"}), 500
 
-    # Analytics
+    db.session.refresh(current_user)
     track_event("pay", article_id=article.id, publisher_id=article.publisher_id, metadata={"price_cents": price})
-
-    token = issue_jwt(current_user.id, article.id, article.publisher_id, exp_minutes=10)
-
-    unlocked = set(session.get("unlocked_articles", []))
-    unlocked.add(str(article.id))
-    session["unlocked_articles"] = list(unlocked)
-
-    return jsonify({
-        "access_token": token,
-        "balance_cents": current_user.wallet_cents,
-        "price_cents": price,
-        "transaction_id": txn.id,
-        "split": split_amounts,
-    })
+    return _grant_and_respond(txn.id, split_amounts, current_user.wallet_cents or 0)
 
 
 @bp.route("/verify", methods=["POST"])
@@ -168,34 +217,63 @@ def refund():
     orig = Transaction.query.get(data["transaction_id"])
     if not orig or orig.user_id != current_user.id:
         return jsonify({"error": "Transaction not found"}), 404
+    if orig.type != "debit":
+        return jsonify({"error": "Not refundable"}), 400
     # 10-minute refund window
     if (datetime.utcnow() - orig.created_at) > timedelta(minutes=10):
         return jsonify({"error": "Refund window closed"}), 400
-    if orig.type != "debit":
-        return jsonify({"error": "Not refundable"}), 400
+    # Never refund the same purchase twice.
+    if already_refunded(orig.id):
+        return jsonify({"error": "Already refunded"}), 409
 
-    # Create refund transaction (audit trail)
-    refund_txn = Transaction(
-        user_id=current_user.id,
-        article_id=orig.article_id,
-        publisher_id=orig.publisher_id,
-        price_cents=orig.price_cents,
-        fee_cents=0,
-        net_cents=-orig.price_cents,
-        type="refund",
-        ip_address=request.remote_addr,
-        user_agent=request.headers.get("User-Agent"),
-    )
-    current_user.wallet_cents = (current_user.wallet_cents or 0) + orig.price_cents
-    db.session.add(refund_txn)
-    db.session.commit()
+    ref = txn_ref(orig.id)
+    try:
+        orig_split = json.loads(orig.split_breakdown_json) if orig.split_breakdown_json else {}
+    except Exception:
+        orig_split = {}
 
-    # Revoke any token provided for this article if supplied by client (optional best-effort)
+    try:
+        # Return the reader's money AND reverse every payee leg of the original
+        # split — one transaction, so no phantom earnings survive a refund.
+        refund_txn = Transaction(
+            user_id=current_user.id,
+            article_id=orig.article_id,
+            publisher_id=orig.publisher_id,
+            price_cents=orig.price_cents,
+            fee_cents=0,
+            net_cents=-orig.price_cents,
+            type="refund",
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get("User-Agent"),
+        )
+        db.session.add(refund_txn)
+        credit_user(current_user.id, orig.price_cents)
+        add_entry(user_acct(current_user.id), orig.price_cents, "refund", ref)
+        for role, cents in (orig_split or {}).items():
+            if cents:
+                acct = payee_acct(role, orig.article) if orig.article else f"role:{role}"
+                add_entry(acct, -int(cents), "refund_reversal", ref)
+        if orig.article and orig.article.author_id and orig_split.get("author", 0) > 0:
+            from models import AuthorEarnings
+            db.session.add(AuthorEarnings(
+                author_id=orig.article.author_id,
+                article_id=orig.article_id,
+                transaction_id=orig.id,
+                amount_cents=-int(orig_split["author"]),
+                percentage=0,
+                publisher_id=orig.publisher_id,
+            ))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        return jsonify({"error": "Refund could not be completed"}), 500
+
+    db.session.refresh(current_user)
     token = (payload or {}).get("access_token")
     if token:
         revoke_token(token)
 
-    return jsonify({"ok": True, "balance_cents": current_user.wallet_cents, "refund_id": refund_txn.id})
+    return jsonify({"ok": True, "balance_cents": current_user.wallet_cents or 0, "refund_id": refund_txn.id})
 
 
 # ========== PUBLIC APIs ==========
@@ -467,10 +545,14 @@ def auth_login():
     
     user = User.query.filter_by(email=email).first()
     if not user:
-        user = User(email=email, wallet_cents=500)  # $5 starter balance
+        welcome = int(current_app.config.get("WELCOME_CREDIT_CENTS", 0))
+        user = User(email=email, wallet_cents=welcome)
         db.session.add(user)
         db.session.commit()
-    
+        if welcome > 0:
+            add_entry(user_acct(user.id), welcome, "welcome", f"welcome:{user.id}")
+            db.session.commit()
+
     login_user(user, remember=True)
     
     return jsonify({
@@ -506,7 +588,12 @@ def auth_magic_request():
     # For demo, return the link
     link = f"{request.host_url}#/auth/verify?token={token}"
     
-    return jsonify({"ok": True, "demo_link": link})
+    from services.mailer import send_magic_link
+    send_magic_link(email, link)  # best-effort; no-op if RESEND_API_KEY is unset
+    resp = {"ok": True}
+    if current_app.config.get("ENV") != "production":
+        resp["demo_link"] = link  # dev convenience only; production emails the link
+    return jsonify(resp)
 
 
 @bp.route("/auth/magic-link/verify", methods=["POST"])
@@ -525,10 +612,14 @@ def auth_magic_verify():
     
     user = User.query.filter_by(email=ml.email).first()
     if not user:
-        user = User(email=ml.email, wallet_cents=500)
+        welcome = int(current_app.config.get("WELCOME_CREDIT_CENTS", 0))
+        user = User(email=ml.email, wallet_cents=welcome)
         db.session.add(user)
         db.session.commit()
-    
+        if welcome > 0:
+            add_entry(user_acct(user.id), welcome, "welcome", f"welcome:{user.id}")
+            db.session.commit()
+
     login_user(user, remember=True)
     
     try:
@@ -591,15 +682,12 @@ def account_wallet():
 @limiter.limit("20/minute")
 @login_required
 def account_topup():
-    """Dev wallet topup."""
+    """Dev wallet topup (ledgered)."""
     payload = request.get_json(silent=True) or {}
     data = TopupRequestSchema().load(payload)
-    
     amount_cents = data["amount_cents"]
-    
-    current_user.wallet_cents = (current_user.wallet_cents or 0) + amount_cents
-    db.session.commit()
-    
+    topup_wallet(current_user.id, amount_cents, "topup_dev")
+    db.session.refresh(current_user)
     return jsonify({
         "ok": True,
         "balance_cents": current_user.wallet_cents,
@@ -636,9 +724,9 @@ def account_topup_stripe():
         )
         
         if intent.status == "succeeded":
-            current_user.wallet_cents = (current_user.wallet_cents or 0) + amount_cents
-            db.session.commit()
-            return jsonify({"ok": True, "balance_cents": current_user.wallet_cents})
+            _, already = topup_wallet(current_user.id, amount_cents, "topup_stripe_test", external_ref=f"pi:{intent.id}")
+            db.session.refresh(current_user)
+            return jsonify({"ok": True, "balance_cents": current_user.wallet_cents, "already_credited": already})
         
         return jsonify({"error": f"Intent status {intent.status}"}), 400
     except Exception as e:
@@ -738,48 +826,52 @@ def account_topup_verify_session():
         if session.payment_status != "paid":
             return jsonify({"error": "Payment not completed", "status": session.payment_status}), 400
         
-        # Check if we already credited this session (idempotency)
-        existing = Transaction.query.filter_by(
-            user_id=current_user.id,
-            type="topup"
-        ).filter(
-            Transaction.ip_address == session_id  # Using ip_address field to store session_id
-        ).first()
-        
-        if existing:
-            return jsonify({
-                "ok": True,
-                "already_credited": True,
-                "balance_cents": current_user.wallet_cents,
-            })
-        
-        # Credit the wallet
+        # Idempotent credit via the shared ledgered top-up, keyed on the Stripe
+        # session id — so verify-session and the webhook can never double-credit.
         amount_cents = int(session.metadata.get("amount_cents", 0))
-        current_user.wallet_cents = (current_user.wallet_cents or 0) + amount_cents
-        
-        # Create transaction record
-        txn = Transaction(
-            user_id=current_user.id,
-            article_id=None,
-            publisher_id=None,
-            price_cents=amount_cents,
-            fee_cents=0,
-            net_cents=amount_cents,
-            type="topup",
-            ip_address=session_id,  # Store session_id for idempotency
-            user_agent=request.headers.get("User-Agent"),
-        )
-        db.session.add(txn)
-        db.session.commit()
-        
+        _, already = topup_wallet(current_user.id, amount_cents, "topup_stripe", external_ref=f"stripe:{session_id}")
+        db.session.refresh(current_user)
         return jsonify({
             "ok": True,
+            "already_credited": already,
             "balance_cents": current_user.wallet_cents,
-            "amount_credited": amount_cents,
+            "amount_credited": 0 if already else amount_cents,
         })
     
     except Exception as e:
         return jsonify({"error": str(e)}), 400
+
+
+@bp.route("/stripe/webhook", methods=["POST"])
+@csrf.exempt
+def stripe_webhook():
+    """Source-of-truth top-up: credit on checkout.session.completed, Stripe
+    signature verified. Idempotent with verify-session via the same
+    stripe:<session_id> key, so a payment is credited exactly once whether the
+    browser returns or the webhook fires first."""
+    import stripe
+    secret = current_app.config.get("STRIPE_WEBHOOK_SECRET")
+    api_key = current_app.config.get("STRIPE_API_KEY")
+    if not (secret and api_key):
+        return jsonify({"error": "Webhook not configured"}), 400
+    stripe.api_key = api_key
+    try:
+        event = stripe.Webhook.construct_event(
+            request.get_data(), request.headers.get("Stripe-Signature"), secret
+        )
+    except Exception:
+        return jsonify({"error": "Invalid signature"}), 400
+    if event.get("type") == "checkout.session.completed":
+        obj = event["data"]["object"]
+        meta = obj.get("metadata") or {}
+        if obj.get("payment_status") == "paid" and meta.get("type") == "wallet_topup":
+            try:
+                uid = int(meta["user_id"])
+                amt = int(meta["amount_cents"])
+            except Exception:
+                return jsonify({"received": True}), 200
+            topup_wallet(uid, amt, "topup_stripe", external_ref=f"stripe:{obj['id']}")
+    return jsonify({"received": True}), 200
 
 
 @bp.route("/account/transactions", methods=["GET"])
@@ -845,7 +937,12 @@ def publisher_auth_request():
     db.session.commit()
     
     link = f"{request.host_url}#/publisher/verify?token={token}"
-    return jsonify({"ok": True, "demo_link": link})
+    from services.mailer import send_magic_link
+    send_magic_link(email, link)  # best-effort; no-op if RESEND_API_KEY is unset
+    resp = {"ok": True}
+    if current_app.config.get("ENV") != "production":
+        resp["demo_link"] = link  # dev convenience only; production emails the link
+    return jsonify(resp)
 
 
 @bp.route("/publisher/auth/magic-link/verify", methods=["POST"])
@@ -922,7 +1019,7 @@ def publisher_console_stats():
                 func.count(Transaction.id).label('total_unlocks'),
                 func.sum(Transaction.price_cents).label('total_revenue')
             )
-            .filter(Transaction.publisher_id == publisher_id)
+            .filter(Transaction.publisher_id == publisher_id, Transaction.type == "debit")
             .first()
         )
         
@@ -935,7 +1032,8 @@ def publisher_console_stats():
             )
             .filter(
                 Transaction.publisher_id == publisher_id,
-                Transaction.created_at >= since_7d
+                Transaction.created_at >= since_7d,
+                Transaction.type == "debit"
             )
             .first()
         )
@@ -957,6 +1055,7 @@ def publisher_console_stats():
                 func.count(Transaction.id).label('total_unlocks'),
                 func.sum(Transaction.price_cents).label('total_revenue')
             )
+            .filter(Transaction.type == "debit")
             .first()
         )
         
@@ -966,7 +1065,7 @@ def publisher_console_stats():
                 func.count(Transaction.id).label('unlocks_7d'),
                 func.sum(Transaction.price_cents).label('revenue_7d')
             )
-            .filter(Transaction.created_at >= since_7d)
+            .filter(Transaction.created_at >= since_7d, Transaction.type == "debit")
             .first()
         )
         
@@ -1441,10 +1540,9 @@ def admin_credit_user(user_id: int):
     if amount_cents == 0:
         return jsonify({"error": "Amount cannot be zero"}), 400
     
-    # Update wallet
-    user.wallet_cents = (user.wallet_cents or 0) + amount_cents
-    
-    # Create transaction record for audit trail
+    # Adjust the wallet atomically and record it in both the ledger and an
+    # audit transaction, so wallet_cents still reconciles to SUM(ledger).
+    credit_user(user.id, amount_cents)
     txn = Transaction(
         user_id=user.id,
         article_id=None,
@@ -1457,7 +1555,10 @@ def admin_credit_user(user_id: int):
         user_agent=note[:300] if note else "Admin manual adjustment",  # Store note in user_agent field
     )
     db.session.add(txn)
+    db.session.flush()
+    add_entry(user_acct(user.id), amount_cents, "admin", f"admin:{txn.id}")
     db.session.commit()
+    db.session.refresh(user)
     
     return jsonify({
         "ok": True,

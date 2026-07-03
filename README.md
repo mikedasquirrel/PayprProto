@@ -161,7 +161,7 @@ See `.env.example` for all available options:
 | `FLASK_ENV` | development | Environment mode |
 | `SECRET_KEY` | (auto) | Flask session secret |
 | `JWT_SECRET_KEY` | (auto) | JWT token secret |
-| `PLATFORM_FEE_BPS` | 1000 | Platform fee (10%) |
+| `PLATFORM_FEE_BPS` | 0 | Rail usage fee — zero by doctrine (flat ~5¢ knob if ever, never bps) |
 | `DAILY_SPEND_CAP_CENTS` | 1500 | Daily spending limit ($15) |
 | `STRIPE_API_KEY` | (optional) | Stripe test key |
 

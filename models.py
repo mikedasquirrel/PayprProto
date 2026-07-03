@@ -98,8 +98,9 @@ class Transaction(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
-    article_id = db.Column(db.Integer, db.ForeignKey("articles.id"), nullable=False, index=True)
-    publisher_id = db.Column(db.Integer, db.ForeignKey("publishers.id"), nullable=False, index=True)
+    # Nullable: top-ups, admin adjustments and some refunds have no article/publisher.
+    article_id = db.Column(db.Integer, db.ForeignKey("articles.id"), nullable=True, index=True)
+    publisher_id = db.Column(db.Integer, db.ForeignKey("publishers.id"), nullable=True, index=True)
 
     price_cents = db.Column(db.Integer, nullable=False)
     fee_cents = db.Column(db.Integer, nullable=False)
@@ -371,3 +372,118 @@ class AuthorEarnings(db.Model):
     article = db.relationship("Article", lazy=True)
     transaction = db.relationship("Transaction", lazy=True)
     publisher = db.relationship("Publisher", lazy=True)
+
+
+class LedgerEntry(db.Model):
+    """Append-only money journal. Balance of any account = SUM(delta_cents).
+    Written in the same DB transaction as every balance change, so the cached
+    User.wallet_cents is always reconcilable and payees have real balances."""
+    __tablename__ = "ledger_entries"
+
+    id = db.Column(db.Integer, primary_key=True)
+    account = db.Column(db.String(64), nullable=False, index=True)  # user:1 | author:2 | publisher:3 | platform
+    delta_cents = db.Column(db.Integer, nullable=False)  # signed
+    reason = db.Column(db.String(40), nullable=False)  # purchase | split_credit | refund | refund_reversal | topup | welcome | admin | payout
+    ref = db.Column(db.String(128), index=True)  # e.g. txn:123, stripe session id, idempotency key
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    __table_args__ = (
+        Index("ix_ledger_account_created", "account", "created_at"),
+    )
+
+
+class IdempotentOp(db.Model):
+    """A completed side-effecting operation, keyed so a retry returns the same
+    result instead of repeating the effect (double top-up, double charge)."""
+    __tablename__ = "idempotent_ops"
+
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(128), nullable=False, unique=True, index=True)
+    response_json = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+
+# ======================================================================
+# Developer platform — the API side of paypr as a generalizable rail.
+#
+# A DeveloperApp is any external project (Resonance, do-ai-know-you, a tool,
+# a model endpoint) that wants to charge on the rail. It authenticates
+# machine-to-machine with an ApiKey (never a human cookie), sells "pieces"
+# (generalized units of value — an article, a finding, one compute run), and
+# meters charges against readers who have granted it a spending allowance.
+# Money it earns accrues to its own Publisher ledger account, exactly like a
+# first-party publisher — so the whole existing ledger/split/refund core is
+# reused, not duplicated.
+# ======================================================================
+
+class DeveloperApp(db.Model):
+    """An external project registered to charge on the paypr rail."""
+    __tablename__ = "developer_apps"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    slug = db.Column(db.String(200), nullable=False, unique=True, index=True)
+    # The paypr reader who owns/administers this app (creates keys, sees usage).
+    owner_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    # The creator account money earned by this app accrues to (ledger publisher:<id>).
+    publisher_id = db.Column(db.Integer, db.ForeignKey("publishers.id"), nullable=True, index=True)
+
+    description = db.Column(db.Text)
+    website_url = db.Column(db.String(500))
+    # Default platform-relative split for metered charges with no per-call split,
+    # as a JSON bps map, e.g. {"publisher": 9000, "platform": 1000}. Optional.
+    default_split_json = db.Column(db.Text)
+
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    owner = db.relationship("User", lazy=True)
+    publisher = db.relationship("Publisher", lazy=True)
+    keys = db.relationship("ApiKey", backref="app", lazy=True)
+
+
+class ApiKey(db.Model):
+    """A server-to-server credential for a DeveloperApp. Only the SHA-256 hash of
+    the secret is stored — the plaintext ``sk_…`` is shown once at creation and
+    never again. ``prefix``/``last4`` are safe-to-display fragments for the
+    console. A key is valid iff ``revoked_at IS NULL``."""
+    __tablename__ = "api_keys"
+
+    id = db.Column(db.Integer, primary_key=True)
+    app_id = db.Column(db.Integer, db.ForeignKey("developer_apps.id"), nullable=False, index=True)
+    label = db.Column(db.String(120))  # human note, e.g. "production", "ci"
+    mode = db.Column(db.String(8), default="test", nullable=False)  # test | live
+    prefix = db.Column(db.String(32), index=True)  # e.g. "sk_test_ab12cd" (display only)
+    last4 = db.Column(db.String(8))
+    key_hash = db.Column(db.String(128), nullable=False, unique=True, index=True)
+    scopes = db.Column(db.String(300), default="pieces:read,pieces:write,charges:write,events:read")
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    last_used_at = db.Column(db.DateTime, nullable=True)
+    revoked_at = db.Column(db.DateTime, nullable=True)
+
+    @property
+    def active(self) -> bool:
+        return self.revoked_at is None
+
+
+class AppReaderGrant(db.Model):
+    """A reader's explicit authorization for a DeveloperApp to meter charges
+    against their wallet, up to a per-day cap. This is the honest 'BYO-wallet
+    bridge': the app can never touch a wallet the reader hasn't opted into, and
+    the cap bounds the blast radius. One active grant per (app, reader)."""
+    __tablename__ = "app_reader_grants"
+
+    id = db.Column(db.Integer, primary_key=True)
+    app_id = db.Column(db.Integer, db.ForeignKey("developer_apps.id"), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    daily_cap_cents = db.Column(db.Integer, nullable=False, default=500)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    revoked_at = db.Column(db.DateTime, nullable=True)
+
+    app = db.relationship("DeveloperApp", lazy=True)
+    user = db.relationship("User", lazy=True)
+
+    __table_args__ = (
+        Index("ix_grant_app_user", "app_id", "user_id"),
+    )

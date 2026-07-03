@@ -18,10 +18,27 @@ class BaseConfig:
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    STRIPE_API_KEY = os.environ.get("STRIPE_API_KEY")
+    # Our code reads STRIPE_API_KEY, but .env.example historically said
+    # STRIPE_SECRET_KEY — honour both so a key set under either name works.
+    STRIPE_API_KEY = os.environ.get("STRIPE_API_KEY") or os.environ.get("STRIPE_SECRET_KEY")
     STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY")
-    PLATFORM_FEE_BPS = int(os.environ.get("PLATFORM_FEE_BPS", 1000))  # 10%
+    STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET")
+
+    # Email via Resend. If RESEND_API_KEY is unset, all email is a graceful no-op.
+    RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
+    MAIL_FROM = os.environ.get("PAYPR_MAIL_FROM", "paypr <no-reply@paypr.pro>")
+    PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL")  # e.g. https://paypr.pro
+    # Rail usage fee — DOCTRINE (2026-07-02): the rail takes NO fee on usage.
+    # Charges, unlocks and metered runs settle 100% to creators/apps; the only
+    # platform revenue is card-cost recovery at top-up (production rail). If a
+    # usage fee ever ships, it will be a small FLAT amount (~5¢) via a new
+    # RAIL_FEE_CENTS knob — never a percentage. Do not raise this default.
+    PLATFORM_FEE_BPS = int(os.environ.get("PLATFORM_FEE_BPS", 0))
     DAILY_SPEND_CAP_CENTS = int(os.environ.get("DAILY_SPEND_CAP_CENTS", 1500))
+    # Spendable credit granted to a brand-new account. Default 0: a bare email
+    # must never mint spendable money (that was a free-money faucet). Set a small
+    # value only if that credit is tracked as non-withdrawable.
+    WELCOME_CREDIT_CENTS = int(os.environ.get("WELCOME_CREDIT_CENTS", 0))
 
     WTF_CSRF_TIME_LIMIT = 3600
     REMEMBER_COOKIE_DURATION = timedelta(days=7)
