@@ -197,21 +197,27 @@ export async function renderPlatform() {
                 REST API
               </h3>
               <p class="integration-description">
-                Full-featured API for custom integrations. Create unlocks,
-                verify access, track analytics programmatically.
+                A real, versioned API for custom integrations. Mint keys, register
+                pieces, and meter charges server-to-server. See the
+                <a href="#/developers/reference">full reference</a> and the
+                <a href="#/developers/console">developer console</a>.
               </p>
               <div class="integration-code-block">
-                <pre><code>POST /api/pay
+                <pre><code>POST /api/v1/charges
+Authorization: Bearer sk_test_...
 {
-  "article_id": 123,
-  "user_id": "abc123"
+  "reader_email": "reader@example.com",
+  "piece_id": 123
 }
 
 Response: {
-  "access_token": "...",
-  "balance_cents": 450
+  "ok": true,
+  "charge_id": 42,
+  "access_token": "eyJ...",
+  "split": { "publisher": 23, "platform": 2 }
 }</code></pre>
               </div>
+              <a href="#/developers" class="btn btn-secondary" style="margin-top:1rem">Explore the developer platform →</a>
             </div>
 
             <div class="integration-option">

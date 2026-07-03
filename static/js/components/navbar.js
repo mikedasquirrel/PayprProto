@@ -77,7 +77,19 @@ class Navbar {
               <a href="#/platform" class="navbar-dropdown-item">How It Works</a>
             </div>
           </div>
-          
+
+          <!-- Developers Dropdown -->
+          <div class="navbar-dropdown">
+            <button class="navbar-link navbar-dropdown-trigger">
+              Developers ▾
+            </button>
+            <div class="navbar-dropdown-menu">
+              <a href="#/developers" class="navbar-dropdown-item">🧭 API Overview</a>
+              <a href="#/developers/reference" class="navbar-dropdown-item">📖 API Reference</a>
+              <a href="#/developers/console" class="navbar-dropdown-item">🔑 Developer Console</a>
+            </div>
+          </div>
+
           ${isAuthenticated ? `
             <!-- Tools Dropdown (Authenticated) -->
             <div class="navbar-dropdown">

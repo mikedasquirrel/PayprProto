@@ -250,6 +250,38 @@ class APIClient {
   async getShowcaseStats(slug) {
     return fetch(`/showcase/${slug}/stats`).then(r => r.json());
   }
+
+  // ===== Developer platform (v1) =====
+  // The machine-facing rail lives under /api/v1. Owner-facing calls below use the
+  // session cookie (same-origin); the server-to-server surface (pieces/charges)
+  // is authenticated with an sk_ API key and is meant to be called from a backend.
+  async v1(endpoint, options = {}) {
+    const config = {
+      ...options,
+      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+      credentials: 'same-origin',
+    };
+    const resp = await fetch(`/api/v1${endpoint}`, config);
+    const ct = resp.headers.get('content-type') || '';
+    const data = ct.includes('application/json') ? await resp.json() : await resp.text();
+    if (!resp.ok) {
+      const err = new Error((data && data.error) || `HTTP ${resp.status}`);
+      err.status = resp.status;
+      err.data = data;
+      throw err;
+    }
+    return data;
+  }
+
+  listApps() { return this.v1('/apps'); }
+  createApp(data) { return this.v1('/apps', { method: 'POST', body: JSON.stringify(data) }); }
+  getApp(id) { return this.v1(`/apps/${id}`); }
+  issueKey(appId, data) { return this.v1(`/apps/${appId}/keys`, { method: 'POST', body: JSON.stringify(data || {}) }); }
+  revokeKey(keyId) { return this.v1(`/keys/${keyId}/revoke`, { method: 'POST', body: '{}' }); }
+  rotateKey(keyId) { return this.v1(`/keys/${keyId}/rotate`, { method: 'POST', body: '{}' }); }
+  listGrants() { return this.v1('/grants'); }
+  createGrant(data) { return this.v1('/grants', { method: 'POST', body: JSON.stringify(data) }); }
+  revokeGrant(id) { return this.v1(`/grants/${id}/revoke`, { method: 'POST', body: '{}' }); }
 }
 
 // Create and export singleton instance

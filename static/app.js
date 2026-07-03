@@ -19,6 +19,9 @@ import { renderAbout } from './js/pages/about.js';
 import { renderPublications } from './js/pages/publications.js';
 import { renderPlatform } from './js/pages/platform.js';
 import { renderForWriters } from './js/pages/for-writers.js';
+import { renderDevelopers } from './js/pages/developers.js';
+import { renderDeveloperConsole } from './js/pages/developer-console.js';
+import { renderApiReference } from './js/pages/api-reference.js';
 import { renderPaymentSuccess } from './js/pages/payment-success.js';
 import { renderPaymentCancel } from './js/pages/payment-cancel.js';
 
@@ -44,7 +47,12 @@ async function init() {
   router.register('/publications', renderPublications);
   router.register('/platform', renderPlatform);
   router.register('/for-writers', renderForWriters);
-  
+
+  // Developers / API realm
+  router.register('/developers', renderDevelopers);
+  router.register('/developers/console', renderDeveloperConsole);
+  router.register('/developers/reference', renderApiReference);
+
   // Browse pages
   router.register('/', renderNewsstand);
   router.register('/publishers', renderPublishers);
