@@ -1,5 +1,13 @@
 # Paypr - One-Click Pay-to-Unlock Articles
 
+> **STATUS (2026-07-02): the LAB, not the product.** This repo is paypr's
+> reference implementation and proving ground — the append-only ledger, atomic
+> debit, idempotency, grant/cap metered charges, and the money test suite were
+> all proven here first. **The production rail lives in `../FreeSpeak/paypr/`**
+> (serving freespeak.press + paypr.pro), where those mechanisms are now ported
+> (see `FreeSpeak/docs/METERED_CHARGES.md`). Build ideas here; ship them there.
+> Don't deploy this repo anywhere that holds real balances.
+
 A modern, API-first micropayment platform for quality journalism. Built with Flask (backend) and vanilla JavaScript SPA (frontend).
 
 ## 🚀 Quick Start
